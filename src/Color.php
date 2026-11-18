@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf;
 
+use SugarCommerce\Text\Display\Color as Hex;
+
 /**
  * Class Color
  *
@@ -43,28 +45,19 @@ final readonly class Color {
 	/**
 	 * Build from a hex string.
 	 *
+	 * Read by sugarcommerce/text's Display\Color, the one hex reader of the
+	 * SugarCommerce packages.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $hex e.g. `#1a2b3c` or `1a2b3c`.
+	 * @param string $hex e.g. `#1a2b3c`, `1a2b3c` or `#abc`.
 	 *
-	 * @return self
+	 * @return self Black when it is not a colour.
 	 */
 	public static function hex( string $hex ): self {
-		$hex = ltrim( trim( $hex ), '#' );
+		$rgb = Hex::rgb( $hex );
 
-		if ( 3 === strlen( $hex ) ) {
-			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-		}
-
-		if ( 1 !== preg_match( '/^[0-9a-f]{6}$/i', $hex ) ) {
-			return new self();
-		}
-
-		return new self(
-			(int) hexdec( substr( $hex, 0, 2 ) ),
-			(int) hexdec( substr( $hex, 2, 2 ) ),
-			(int) hexdec( substr( $hex, 4, 2 ) )
-		);
+		return null === $rgb ? new self() : new self( ...$rgb );
 	}
 
 	/**

@@ -1,6 +1,6 @@
 {
     "name": "sugarcommerce/pdf",
-    "description": "PDF invoices, receipts and statements with no dependencies: tables, vector logos, pages that break where they should, EU VAT wording and eleven languages, ready to save or send to the browser.",
+    "description": "PDF invoices, receipts and statements with nothing to install: tables, vector logos, pages that break where they should, EU VAT wording and eleven languages, ready to save or send to the browser.",
     "homepage": "https://github.com/SugarCommerce/pdf",
     "type": "library",
     "license": "GPL-2.0-or-later",
@@ -23,8 +23,18 @@
     "require": {
         "php": ">=8.3",
         "ext-iconv": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "sugarcommerce/text": "dev-main"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../text",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
     "require-dev": {
         "phpcompatibility/phpcompatibility-wp": "^2.1",
         "phpunit/phpunit": "^12.0",

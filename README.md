@@ -1,7 +1,8 @@
 # PDF
 
 Invoices, receipts and statements as PDF files, written directly by PHP with
-nothing to install: no binary, no HTML engine, no Composer dependencies.
+nothing to install: no binary, no HTML engine, and one small Composer
+dependency, `sugarcommerce/text`, whose `Display\Color` reads a hex colour.
 
 ## What it does
 
@@ -189,10 +190,12 @@ not listed keeps its name and behaviour.
 | `new Translations( fn ( $key, $default ) => __( $default, 'my-plugin' ) )` | `Translations::wordpress( 'my-plugin' )` — falls through to the site's built-in language as well |
 | `Language::from_locale( get_locale() )` | `Language::site()` |
 | headers written by hand to stream a PDF | `Download::send()` and `Download::headers()` |
+| `Color::hex()`'s own hex parsing | the same method, reading through `SugarCommerce\Text\Display\Color::rgb()` (sugarcommerce/text, the one colour helper) |
 
 ## Requirements
 
 * PHP 8.3 or later, with `iconv` and `mbstring` (`intl`, when present, is used to take accents off letters Windows-1252 lacks)
+* `sugarcommerce/text`
 * WordPress 7.1 or later — optional: without it the language is English and downloads skip `nocache_headers()`
 
 ## License
