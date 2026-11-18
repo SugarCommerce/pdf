@@ -112,8 +112,19 @@ to the built-in language — so a German site gets German invoices with no
 translation work. `new Translations( $callable )` wraps any other translator.
 
 The list stops at Latin-1 for a concrete reason: the PDF base fonts are
-WinAnsi, so Polish, Czech, Greek or Cyrillic would print as question marks.
-Customer names are under the same limit.
+WinAnsi (Windows-1252), so Polish or Czech text would lose its accents and
+Greek or Cyrillic would print as question marks. Customer names are under the
+same limit.
+
+## Characters
+
+Text is transcoded to Windows-1252 a character at a time, without iconv, so it
+comes out the same on every server: `Café £5 €5 Zoë` prints as typed, with the
+curly quotes, dashes, `…` and `™` too. A letter Windows-1252 lacks loses its
+accent (`Wąchock` → `Wachock`, `Dvořák` → `Dvorak`) or takes a stand-in
+(`Łódź` → `Lódz`); anything else — Greek, Cyrillic, CJK, emoji — is a `?`, and
+the rest of the line is untouched. Scripts beyond Latin need an embedded font,
+which this package does not do.
 
 ## A document of your own
 
@@ -181,7 +192,7 @@ not listed keeps its name and behaviour.
 
 ## Requirements
 
-* PHP 8.3 or later, with `iconv` and `mbstring`
+* PHP 8.3 or later, with `iconv` and `mbstring` (`intl`, when present, is used to take accents off letters Windows-1252 lacks)
 * WordPress 7.1 or later — optional: without it the language is English and downloads skip `nocache_headers()`
 
 ## License
