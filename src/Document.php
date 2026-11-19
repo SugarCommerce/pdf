@@ -1041,6 +1041,14 @@ final class Document {
 			}
 		}
 
+		// iconv only for a letter or digit (a ligature: ﬁ → fi). For the
+		// rest, what comes back depends on the server's iconv: glibc turns
+		// 😀 into `:-D`, macOS's into nothing at all. The symbols worth a
+		// stand-in are in STAND_INS.
+		if ( ! preg_match( '/^[\p{L}\p{N}]$/u', $character ) ) {
+			return '?';
+		}
+
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A build without //TRANSLIT returns false, handled below.
 		$transliterated = @iconv( 'UTF-8', 'Windows-1252//TRANSLIT', $character );
 
