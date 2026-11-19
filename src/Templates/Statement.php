@@ -118,6 +118,8 @@ final readonly class Statement {
 		$pdf   = new Document( $this->size, $this->orientation, margin: 48, font_size: 9, leading: 12.5 );
 		$brand = $this->branding;
 
+		$pdf->family( $brand->typeface );
+
 		// The footer's rule is six points above the bottom margin.
 		$pdf->keep_clear( 12 );
 
@@ -203,7 +205,7 @@ final readonly class Statement {
 		$lines  = $brand->seller_lines( $brand->seller( $this->from ), $this->translator );
 
 		if ( array() !== $lines ) {
-			$pdf->move_to( $top - 37 + Font::Helvetica->ascender( 7.5 ) );
+			$pdf->move_to( $top - 37 + $pdf->ascender( 7.5 ) );
 			$pdf->block( implode( "\n", $lines ), $x, $pdf->content_width() * 0.55, 7.5, Font::Helvetica, $brand->muted(), Align::Left, 9.5 );
 			$rule_y = min( $rule_y, $pdf->cursor() - 6 );
 		}

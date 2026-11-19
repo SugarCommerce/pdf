@@ -18,12 +18,15 @@
         "statement",
         "vat",
         "reverse-charge",
-        "ecommerce"
+        "ecommerce",
+        "truetype",
+        "unicode"
     ],
     "require": {
         "php": ">=8.3",
         "ext-iconv": "*",
         "ext-mbstring": "*",
+        "ext-zlib": "*",
         "sugarcommerce/money": "dev-main",
         "sugarcommerce/qr": "dev-main",
         "sugarcommerce/text": "dev-main"

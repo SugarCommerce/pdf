@@ -400,7 +400,7 @@ final class Table {
 	 */
 	private function draw_lines( Document $pdf, array $columns, array $widths, float $size ): void {
 		$x     = $pdf->left();
-		$first = $pdf->cursor() - Font::Helvetica->baseline_in_band( $this->row_height, $size );
+		$first = $pdf->cursor() - $pdf->baseline_in_band( $this->row_height, $size );
 
 		foreach ( $widths as $index => $width ) {
 			if ( $width > 0 ) {

@@ -13,6 +13,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Templates;
 
 use SugarCommerce\Pdf\Color;
+use SugarCommerce\Pdf\FontFamily;
 
 /**
  * Class Branding
@@ -42,6 +43,12 @@ final readonly class Branding {
 	 * @param float              $logo_box  viewBox height of that path.
 	 * @param array<int, string> $address   Your address, one line per element.
 	 * @param array<int, string> $footnotes Small print for the page foot.
+	 * @param FontFamily|null    $typeface  The family every document is set in
+	 *                                      (since 1.3.0): your brand's face, or
+	 *                                      {@see FontFamily::noto_sans()}. Null
+	 *                                      sets them in Helvetica, the smallest
+	 *                                      file, with Noto Sans drawing only the
+	 *                                      words Helvetica cannot.
 	 */
 	public function __construct(
 		public string $name,
@@ -51,6 +58,7 @@ final readonly class Branding {
 		public float $logo_box = 100.0,
 		public array $address = array(),
 		public array $footnotes = array(),
+		public ?FontFamily $typeface = null,
 	) {}
 
 	/**

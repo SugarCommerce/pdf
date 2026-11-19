@@ -30,54 +30,74 @@ final readonly class Writer {
 	/**
 	 * Serialise pages into a PDF.
 	 *
+	 * Objects are numbered as they are needed: the catalogue, the page
+	 * tree and the information dictionary first, then each font the pages
+	 * use — one object for a base-14 font, five for an embedded subset —
+	 * then each page and its content stream.
+	 *
+	 * Content streams are deflated (since 1.3.0). Text and drawing
+	 * operators compress to about a fifth, and zlib is in every PHP build.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @param list<string>              $pages    Content streams.
-	 * @param float                     $width    Page width in points.
-	 * @param float                     $height   Page height in points.
-	 * @param array<string, string|int> $metadata Title, Author, Subject,
-	 *                                            Keywords, Creator, and
-	 *                                            CreationDate as a Unix
-	 *                                            timestamp.
-	 * @param string                    $language BCP 47 tag for the catalogue's
-	 *                                            `/Lang` (since 1.2.0), or empty
-	 *                                            for none. Anything else than
-	 *                                            letters, digits and hyphens is
-	 *                                            dropped.
+	 * @param list<string>                   $pages    Content streams.
+	 * @param float                          $width    Page width in points.
+	 * @param float                          $height   Page height in points.
+	 * @param array<string, string|int>      $metadata Title, Author, Subject,
+	 *                                                 Keywords, Creator, and
+	 *                                                 CreationDate as a Unix
+	 *                                                 timestamp.
+	 * @param string                         $language BCP 47 tag for the catalogue's
+	 *                                                 `/Lang` (since 1.2.0), or empty
+	 *                                                 for none. Anything else than
+	 *                                                 letters, digits and hyphens is
+	 *                                                 dropped.
+	 * @param array<string, Font|FontSubset> $fonts    Resource name => font, every
+	 *                                                 one the pages show text in
+	 *                                                 (since 1.3.0).
 	 *
 	 * @return string Raw PDF bytes.
 	 */
-	public static function write( array $pages, float $width, float $height, array $metadata = array(), string $language = '' ): string {
+	public static function write( array $pages, float $width, float $height, array $metadata = array(), string $language = '', array $fonts = array() ): string {
 		$pages = array() === $pages ? array( '' ) : $pages;
 
-		$objects   = array();
-		$page_refs = array();
+		$language   = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $language );
+		$objects    = array();
+		$objects[1] = '<</Type /Catalog /Pages 2 0 R' . ( '' !== $language ? ' /Lang (' . $language . ')' : '' ) . '>>';
+		$objects[3] = self::info( $metadata );
 
-		// 1 Catalog, 2 Pages, 3-5 fonts, 6 Info, then page/content pairs.
-		$first_page = 7;
+		$next      = 4;
+		$resources = array();
 
-		foreach ( $pages as $index => $stream ) {
-			$page_object    = $first_page + ( $index * 2 );
-			$content_object = $page_object + 1;
-			$page_refs[]    = $page_object . ' 0 R';
+		foreach ( $fonts as $resource => $font ) {
+			$resources[] = '/' . $resource . ' ' . $next . ' 0 R';
 
-			$objects[ $page_object ] = '<</Type /Page /Parent 2 0 R '
-				. '/Resources <</Font <</F1 3 0 R /F2 4 0 R /F3 5 0 R>>>> '
-				. '/Contents ' . $content_object . ' 0 R>>';
+			if ( $font instanceof Font ) {
+				$objects[ $next++ ] = $font->dictionary();
+				continue;
+			}
 
-			$objects[ $content_object ] = '<</Length ' . strlen( $stream ) . ">>\nstream\n" . $stream . "\nendstream";
+			$objects += $font->objects( $next );
+			$next    += 5;
 		}
 
-		$language   = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $language );
-		$objects[1] = '<</Type /Catalog /Pages 2 0 R' . ( '' !== $language ? ' /Lang (' . $language . ')' : '' ) . '>>';
+		$resources = '/Resources <</Font <<' . implode( ' ', $resources ) . '>>>> ';
+		$page_refs = array();
+
+		foreach ( $pages as $stream ) {
+			$page_object    = $next++;
+			$content_object = $next++;
+			$page_refs[]    = $page_object . ' 0 R';
+			$compressed     = (string) gzcompress( $stream, 9 );
+
+			$objects[ $page_object ]    = '<</Type /Page /Parent 2 0 R ' . $resources . '/Contents ' . $content_object . ' 0 R>>';
+			$objects[ $content_object ] = '<</Length ' . strlen( $compressed ) . " /Filter /FlateDecode>>\nstream\n" . $compressed . "\nendstream";
+		}
+
 		$objects[2] = '<</Type /Pages /Kids [' . implode( ' ', $page_refs ) . '] /Count ' . count( $pages )
 			. sprintf( ' /MediaBox [0 0 %.2F %.2F]>>', $width, $height );
-		$objects[3] = '<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>';
-		$objects[4] = '<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding>>';
-		$objects[5] = '<</Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding>>';
-		$objects[6] = self::info( $metadata );
 
-		return self::serialise( $objects, $first_page + ( count( $pages ) * 2 ) - 1 );
+		return self::serialise( $objects, $next - 1 );
 	}
 
 	/**
@@ -183,7 +203,9 @@ final readonly class Writer {
 	 * @return string
 	 */
 	private static function serialise( array $objects, int $max ): string {
-		$pdf     = "%PDF-1.4\n";
+		// The comment of high bytes tells a transfer tool the file is
+		// binary, now that its streams are compressed.
+		$pdf     = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
 		$offsets = array();
 
 		for ( $n = 1; $n <= $max; $n++ ) {
@@ -199,6 +221,6 @@ final readonly class Writer {
 			$pdf .= sprintf( "%010d 00000 n \n", $offsets[ $n ] );
 		}
 
-		return $pdf . "trailer\n<</Size " . ( $max + 1 ) . " /Root 1 0 R /Info 6 0 R>>\nstartxref\n" . $xref . "\n%%EOF";
+		return $pdf . "trailer\n<</Size " . ( $max + 1 ) . " /Root 1 0 R /Info 3 0 R>>\nstartxref\n" . $xref . "\n%%EOF";
 	}
 }

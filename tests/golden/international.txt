@@ -1,0 +1,23 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0050
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Ярослав Ковальчук Date of supply 18 November 2026
+12 Example Street вул. Хрещатик, 22
+Dublin 2, D02 X285 Київ 01001
+Ireland Україна
+accounts@northwind.example yaroslav@example.com
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Łódź field recordings — Wąchock session 1 £120.00 £120.00
+Nagrania terenowe, zaśpiewane przez chór
+Ελληνικά δείγματα: Θεσσαλονίκη 2 £80.00 £160.00
+Пакет семплів «Карпати» 1 £45.00 £45.00
+Subtotal £325.00
+Total due £325.00
+Zero-rated export outside the European Union.
+PAYMENT
+Дякуємо! Ευχαριστούμε! Dziękujemy! Payment in £ or € to the account on file.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

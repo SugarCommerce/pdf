@@ -1,0 +1,50 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Make a bundled font from an upstream static TrueType file.
+ *
+ * Keeps the outlines, metrics, character map, names and licence fields;
+ * drops what this library never reads: the shaping and kerning tables
+ * (GSUB, GPOS, GDEF) and the glyph names in `post`. The outlines are not
+ * touched, so the result draws exactly as the original does.
+ *
+ *   bin/trim-font NotoSans-Regular.ttf fonts/NotoSans-Regular.ttf
+ *
+ * @package SugarCommerce\Pdf
+ */
+
+declare( strict_types=1 );
+
+require dirname( __DIR__ ) . '/vendor/autoload.php';
+
+use SugarCommerce\Pdf\TrueType;
+
+if ( 3 !== $argc ) {
+	fwrite( STDERR, "Usage: bin/trim-font <upstream.ttf> <bundled.ttf>\n" );
+	exit( 1 );
+}
+
+$font = TrueType::file( $argv[1] );
+$post = $font->table( 'post' );
+
+// Version 3: the header alone, no glyph names.
+$replace = '' === $post ? array() : array( 'post' => pack( 'N', 0x00030000 ) . substr( str_pad( $post, 32, "\0" ), 4, 28 ) );
+
+$trimmed = $font->without_tables(
+	array( 'OS/2', 'cmap', 'cvt ', 'fpgm', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post', 'prep' ),
+	$replace
+);
+
+// Read back: the result must be a font this library accepts, with the
+// same glyphs for the same characters.
+$check = new TrueType( $trimmed );
+
+foreach ( array( 0x41, 0xE9, 0x0141, 0x03A9, 0x042F, 0x20AC ) as $code ) {
+	if ( $check->glyph( $code ) !== $font->glyph( $code ) || $check->advance( $check->glyph( $code ) ) !== $font->advance( $font->glyph( $code ) ) ) {
+		fwrite( STDERR, sprintf( "U+%04X differs after trimming.\n", $code ) );
+		exit( 1 );
+	}
+}
+
+file_put_contents( $argv[2], $trimmed );
+printf( "%s: %d bytes -> %d bytes\n", basename( $argv[2] ), strlen( (string) file_get_contents( $argv[1] ) ), strlen( $trimmed ) );

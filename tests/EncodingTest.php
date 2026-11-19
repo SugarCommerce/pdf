@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Tests\Support\Reader;
 
 /**
  * The page fonts use WinAnsi (Windows-1252). Every character it has must
@@ -113,7 +114,7 @@ final class EncodingTest extends TestCase {
 	}
 
 	public function test_a_rendered_page_carries_the_bytes(): void {
-		$rendered = ( new Document() )->text( 'Café £5 €5 Zoë' )->render();
+		$rendered = Reader::plain( ( new Document() )->text( 'Café £5 €5 Zoë' )->render() );
 
 		$this->assertStringContainsString( '(' . self::CAFE . ') Tj', $rendered );
 	}

@@ -283,6 +283,8 @@ final readonly class Invoice {
 		$pdf   = new Document( $this->size, Orientation::Portrait, margin: 48, font_size: 9.5, leading: 13 );
 		$brand = $this->branding;
 
+		$pdf->family( $brand->typeface );
+
 		$pdf->language( $this->language()?->value ?? '' );
 
 		// The footnotes' rule sits above the bottom margin, and the page
@@ -455,7 +457,7 @@ final readonly class Invoice {
 		$pdf->text_at(
 			$label,
 			$left,
-			$bottom + ( ( $height - Font::HelveticaBold->cap_height( 8 ) ) / 2 ),
+			$bottom + ( ( $height - $pdf->cap_height( 8, Font::HelveticaBold ) ) / 2 ),
 			8,
 			Font::HelveticaBold,
 			$brand->ink(),
@@ -534,15 +536,15 @@ final readonly class Invoice {
 
 		// block() takes the top of the first line; the name's baseline is
 		// sixteen points under the heading's, as it always was.
-		$pdf->move_to( $top - 16 + Font::HelveticaBold->ascender( 10.5 ) );
+		$pdf->move_to( $top - 16 + $pdf->ascender( 10.5, Font::HelveticaBold ) );
 		$pdf->block( $party->name, $x, $width, 10.5, Font::HelveticaBold, $brand->ink(), Align::Left, 13 );
 
 		// The address's first baseline is thirteen points under the name's
 		// last one.
-		$pdf->move_to( $pdf->cursor() - Font::HelveticaBold->ascender( 10.5 ) + Font::Helvetica->ascender( 9 ) );
+		$pdf->move_to( $pdf->cursor() - $pdf->ascender( 10.5, Font::HelveticaBold ) + $pdf->ascender( 9 ) );
 		$pdf->block( implode( "\n", $party->translated_lines( $this->translator ) ), $x, $width, 9, Font::Helvetica, $brand->muted(), Align::Left, 11.5 );
 
-		return $pdf->cursor() - Font::Helvetica->ascender( 9 ) + 11.5;
+		return $pdf->cursor() - $pdf->ascender( 9 ) + 11.5;
 	}
 
 	/**

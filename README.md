@@ -33,6 +33,8 @@ and sends the download; outside it, it still works.
 * Write the templates in the site's language, or through your plugin's own translations
 * Send a PDF to the browser with a safe file name and headers no cache will keep
 * Put a customer's name anywhere without it breaking out of the document
+* Print names and addresses in Polish, Czech, Turkish, Greek, Ukrainian or any other European alphabet — the bundled Noto Sans draws what Helvetica cannot, and only the letters used are embedded
+* Set every document in your brand's typeface from its `.ttf` files, with copy and search working on the page
 
 ## Installation
 
@@ -238,8 +240,8 @@ then asks the rendered page, as a reader would extract it, for the seller's
 name, address lines and VAT number, the number, the date of supply, the total,
 the customer's VAT number where it is required, the credit note's reference, the
 VAT wording and the kind's standing note. A check of the data passes a template
-that stopped drawing the seller; this one does not, and it reports a name the
-base fonts could not print as written (`Ярослав` comes out as `???????`).
+that stopped drawing the seller; this one does not, and it reports a name no
+font in reach could print as written (`東京` comes out as `??`).
 
 ## Languages
 
@@ -260,20 +262,85 @@ text domain, and a phrase your translation files do not cover falls through
 to the built-in language — so a German site gets German invoices with no
 translation work. `new Translations( $callable )` wraps any other translator.
 
-The list stops at Latin-1 for a concrete reason: the PDF base fonts are
-WinAnsi (Windows-1252), so Polish or Czech text would lose its accents and
-Greek or Cyrillic would print as question marks. Customer names are under the
-same limit.
+The built-in wording is in these eleven. Customer names, addresses, items and
+your own wording can be in any European alphabet: see [Fonts](#fonts).
 
-## Characters
+## Fonts
 
-Text is transcoded to Windows-1252 a character at a time, without iconv, so it
-comes out the same on every server: `Café £5 €5 Zoë` prints as typed, with the
-curly quotes, dashes, `…` and `™` too. A letter Windows-1252 lacks loses its
-accent (`Wąchock` → `Wachock`, `Dvořák` → `Dvorak`) or takes a stand-in
-(`Łódź` → `Lódz`); anything else — Greek, Cyrillic, CJK, emoji — is a `?`, and
-the rest of the line is untouched. Scripts beyond Latin need an embedded font,
-which this package does not do.
+A document is set in the PDF base fonts — Helvetica, Helvetica-Bold,
+Helvetica-Oblique, Courier — which every reader has, so nothing is embedded
+and an invoice in English, German or French is about 4 KB. Their metrics are
+carried, so columns of figures right-align to the point.
+
+Those fonts know Windows-1252 and nothing else. A word they cannot print as
+written is drawn in **Noto Sans**, which comes with the library and covers
+Latin with every European accent, Greek and Cyrillic. Only the glyphs used are
+embedded — a page with one Ukrainian address grows by about 5 KB — and the
+text still copies, searches and reads aloud as the letters it is. Nothing to
+set up:
+
+```php
+$invoice = new Invoice( to: new Party( 'Ярослав Ковальчук', [ 'вул. Хрещатик, 22', 'Київ 01001' ] ), /* … */ );
+```
+
+A word is drawn in one face, never half in each. Text is put in composed form
+first (`e` + a combining acute is `é`), and `Café £5 €5 “Zoë”` stays in
+Helvetica, transcoded a character at a time without iconv so it comes out the
+same on every server.
+
+**Your brand's typeface.** Give the branding a family and every document is set
+in it, headings in its bold:
+
+```php
+use SugarCommerce\Pdf\FontFamily;
+
+$brand = new Branding( 'Northwind Audio', typeface: FontFamily::files(
+	__DIR__ . '/fonts/Inter-Regular.ttf',
+	__DIR__ . '/fonts/Inter-Bold.ttf',
+	__DIR__ . '/fonts/Inter-Italic.ttf',   // optional; italic falls back to the regular
+) );
+
+$brand = new Branding( 'Northwind Audio', typeface: FontFamily::noto_sans() ); // the bundled one, everywhere
+```
+
+A word the family lacks a glyph for falls back to the base font, then to Noto
+Sans. On a `Document` of your own, `family( $family )` does the same, and
+`fallback( $family )` chooses the fallback — a Noto CJK face for Japanese
+names, say — or `fallback( null )` to embed nothing and print what
+Windows-1252 lacks as its nearest letter (`Łódź` → `Lódz`) or `?`.
+`substitutions()` lists every run that did not print as written. Layout code
+asks for a role (`Font::Helvetica`, `Font::HelveticaBold`,
+`Font::HelveticaOblique`, `Font::Courier`) and measures through the document —
+`width()`, `fit()`, `lines()`, `ascender()`, `cap_height()`,
+`baseline_in_band()` — so it is right in whichever face draws.
+
+**What a font must be.** A static TrueType `.ttf`, read in PHP: `cmap` formats
+4 and 12, `hmtx`, `glyf`/`loca` with composite glyphs (an `é` built from `e`
+and an acute brings both), and the vertical metrics from `head`, `hhea`, `OS/2`
+and `post`. It is embedded as a CIDFontType2 subset under Identity-H with a
+`/W` widths array and a ToUnicode map, deflated, with a `ABCDEF+` subset tag.
+Refused with a reason: PostScript-outline `.otf`, `.ttc` collections, WOFF,
+variable fonts (a subset would print every weight as the default — use the
+static instances), and fonts whose licence bits forbid embedding or subsetting.
+No kerning or ligatures, as in the Swift writer this ports.
+
+**Right-to-left and shaped scripts are out of scope.** Arabic, Hebrew, Syriac,
+Thaana, N'Ko, the Indic scripts, Myanmar and Khmer need a shaping engine to
+reorder and join letters; drawn a code point at a time they would come out
+wrong in a way a reader who does not know the script could not tell. They are
+printed as `?` and reported by `substitutions()` — even with a font that has
+the glyphs. CJK and emoji are not refused: a fallback face that has them draws
+them.
+
+**The bundled font.** `fonts/NotoSans-Regular.ttf` and `NotoSans-Bold.ttf` are
+Noto Sans 2.015 (the unhinted static build) with the shaping and kerning tables
+and glyph names removed by `bin/trim-font` — 290 KB each, outlines untouched,
+read only when a word needs them. Noto Sans is under the SIL Open Font License
+1.1 (`fonts/OFL.txt`), with no Reserved Font Name. The OFL is a free licence
+that lets the font be bundled and distributed with software under any licence,
+GPL included — the font stays under the OFL as a separate work in the same
+package, the way WordPress's own default themes ship OFL fonts — and it places
+no condition on documents that embed it.
 
 ## A document of your own
 
@@ -337,19 +404,28 @@ composer test                  # PHPUnit, with smalot/pdfparser reading every pa
 UPDATE_GOLDEN=1 composer test  # after a deliberate change: rewrite the golden files, then read the diff
 ```
 
-`tests/golden/` holds ten documents — an invoice, a reverse charge with a SEPA
-code, a credit note, a proforma, a delivery note, mixed rates, a three-page
-invoice, a French intra-community supply, a receipt and a statement — byte for
-byte, and as `pdftotext -layout` reads them. They double as a gallery. With
-poppler and qpdf installed (`brew install poppler qpdf`; CI installs
-`poppler-utils` and `qpdf`) the suite also runs `qpdf --check` on each and
-checks `pdffonts`; without them those tests are skipped, except in CI, where
-they fail.
+`tests/golden/` holds twelve documents — an invoice, a reverse charge with a
+SEPA code, a credit note, a proforma, a delivery note, mixed rates, a
+three-page invoice, a French intra-community supply, a receipt, a statement,
+an invoice in Cyrillic, Greek and Polish, and one set in Noto Sans — as PDFs
+and as `pdftotext -layout` reads them. They double as a gallery. A PDF is
+compared with every stream inflated, so every object, operator and font byte
+counts but two zlib builds deflating alike does not. With poppler and qpdf
+installed (`brew install poppler qpdf`; CI installs `poppler-utils` and
+`qpdf`) the suite also runs `qpdf --check` on each, checks with `pdffonts`
+that every font is a base font or an embedded subset, and reads the Cyrillic,
+Greek, Polish, `€` and `£` back through both poppler and smalot; without the
+tools those tests are skipped, except in CI, where they fail.
+
+The TrueType reader and subsetter are tested against fonts the suite builds to
+order — format 4 and 12 maps, short and long `loca`, composites of composites
+with every transform size, damaged and hostile files — and against the bundled
+Noto Sans.
 
 ## What it does not do
 
 * No images other than vector paths and QR codes — no JPEG or PNG yet
-* No font embedding yet, so no scripts beyond Latin-1
+* No right-to-left or shaped scripts — Arabic, Hebrew, the Indic scripts — and no kerning or ligatures (see [Fonts](#fonts)); mPDF does those
 * No PDF/A or Factur-X / ZUGFeRD e-invoices yet
 * No HTML or CSS
 * No forms, encryption or signatures, and no reading existing PDFs
@@ -374,7 +450,7 @@ not listed keeps its name and behaviour.
 
 ## Requirements
 
-* PHP 8.3 or later, with `iconv` and `mbstring` (`intl`, when present, is used to take accents off letters Windows-1252 lacks, and for `Totals`' `locale`)
+* PHP 8.3 or later, with `iconv`, `mbstring` and `zlib` (`intl`, when present, composes accents before printing, takes them off letters Windows-1252 lacks when there is no fallback font, and serves `Totals`' `locale`)
 * `sugarcommerce/money`, `sugarcommerce/qr` and `sugarcommerce/text`
 * WordPress 7.1 or later — optional: without it the language is English and downloads skip `nocache_headers()`
 

@@ -78,7 +78,7 @@ final class InvoiceTest extends TestCase {
 
 		foreach ( Reader::runs( $pdf->render( array( 'CreationDate' => 0 ) ) )[0] as $run ) {
 			if ( abs( $run['x'] - $pdf->left() ) < 0.01 && $run['y'] > 600 && $run['y'] < 700 ) {
-				$this->assertLessThanOrEqual( $pdf->left() + $column + 0.01, $run['x'] + Reader::font( $run['font'] )->width_of( $run['text'], $run['size'] ), $run['text'] );
+				$this->assertLessThanOrEqual( $pdf->left() + $column + 0.01, $run['x'] + $run['width'], $run['text'] );
 				++$seen;
 			}
 		}
@@ -253,10 +253,47 @@ final class InvoiceTest extends TestCase {
 		$this->assertStringContainsString( 'The customer VAT number', $warnings );
 	}
 
-	public function test_a_name_the_base_fonts_cannot_print_is_reported(): void {
-		$warnings = self::invoice( from: new Party( 'Ярослав Ltd', array( 'Kyiv' ), tax_id: 'UA1' ) )->compliance_warnings_verifying();
+	/**
+	 * A name Helvetica cannot print is drawn in the bundled fallback, so
+	 * it reaches the page as written — and a reader extracts it so.
+	 */
+	public function test_a_name_the_base_fonts_cannot_print_reaches_the_page(): void {
+		$invoice = self::invoice( from: new Party( 'Ярослав Łódź Ltd', array( 'Київ', 'Ελλάδα' ), tax_id: 'UA1' ) );
 
-		$this->assertContains( 'The supplier name "Ярослав Ltd" did not reach the page.', $warnings );
+		$this->assertSame( array(), $invoice->compliance_warnings_verifying() );
+		$this->assertSame( array(), $invoice->render()->substitutions() );
+
+		$text = Reader::text( self::pdf( $invoice ) );
+
+		foreach ( array( 'Ярослав Łódź Ltd', 'Київ', 'Ελλάδα' ) as $name ) {
+			$this->assertStringContainsString( $name, $text );
+		}
+	}
+
+	/**
+	 * A script no font in reach can draw is still caught by the check of
+	 * the page, and listed as substituted.
+	 */
+	public function test_a_name_nothing_can_print_is_reported(): void {
+		$invoice = self::invoice( from: new Party( '東京 Ltd', array( 'Tokyo' ), tax_id: 'JP1' ) );
+
+		$this->assertContains( 'The supplier name "東京 Ltd" did not reach the page.', $invoice->compliance_warnings_verifying() );
+		$this->assertContains( '東京 Ltd', $invoice->render()->substitutions() );
+	}
+
+	/**
+	 * With the fallback off, the old behaviour: the check of the page
+	 * says the name did not get there.
+	 */
+	public function test_without_a_fallback_the_name_is_reported(): void {
+		$invoice = self::invoice( from: new Party( 'Ярослав Ltd', array( 'Kyiv' ), tax_id: 'UA1' ) );
+		$page    = ( new Document() )->fallback( null );
+
+		foreach ( $invoice->render()->drawn_text() as $text ) {
+			$page->text_at( $text, 0, 0, 9 );
+		}
+
+		$this->assertContains( 'The supplier name "Ярослав Ltd" did not reach the page.', $invoice->compliance_warnings_verifying( $page ) );
 	}
 
 	public function test_the_footer_counts_as_the_page(): void {
@@ -273,7 +310,7 @@ final class InvoiceTest extends TestCase {
 		$bytes = self::pdf( self::invoice( payment_code: $code, translator: Language::German ) );
 
 		$this->assertStringContainsString( 'Zum Bezahlen scannen', Reader::text( $bytes ) );
-		$this->assertGreaterThan( 100, substr_count( $bytes, ' re' ) );
+		$this->assertGreaterThan( 100, substr_count( Reader::plain( $bytes ), ' re' ) );
 	}
 
 	public function test_a_caption_of_your_own_is_kept(): void {

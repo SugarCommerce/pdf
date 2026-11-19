@@ -14,6 +14,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests\Support;
 
 use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\FontFamily;
 use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, Invoice, Language, LineItem, Party, PaymentCode, Receipt, Statement, Totals, TotalsLine, VatLine, VatTreatment};
 
 /**
@@ -43,6 +44,8 @@ final class Fixtures {
 			'french'           => self::french(),
 			'receipt'          => self::receipt(),
 			'statement'        => self::statement(),
+			'international'    => self::international(),
+			'typeface'         => self::typeface(),
 		);
 	}
 
@@ -367,6 +370,66 @@ final class Fixtures {
 			closing: array( 'Closing balance' => '€120.00' ),
 			reference: 'Account ACME-01',
 			from: self::seller(),
+		);
+	}
+
+	/**
+	 * Names and items in Cyrillic, Greek and Polish, in sterling, set in
+	 * Helvetica with the bundled fallback drawing the words it cannot.
+	 *
+	 * @return Invoice
+	 */
+	public static function international(): Invoice {
+		$totals = new Totals(
+			lines: array(
+				new TotalsLine( 'Łódź field recordings — Wąchock session', 12000, note: 'Nagrania terenowe, zaśpiewane przez chór' ),
+				new TotalsLine( 'Ελληνικά δείγματα: Θεσσαλονίκη', 8000, 2 ),
+				new TotalsLine( 'Пакет семплів «Карпати»', 4500 ),
+			),
+			currency: 'GBP',
+			rate: 0,
+		);
+
+		return new Invoice(
+			branding: self::branding(),
+			number: 'INV-2026-0050',
+			from: self::seller(),
+			to: new Party( 'Ярослав Ковальчук', array( 'вул. Хрещатик, 22', 'Київ 01001', 'Україна' ), email: 'yaroslav@example.com' ),
+			items: $totals->items(),
+			totals: $totals->rows(),
+			total: $totals->total(),
+			notes: 'Дякуємо! Ευχαριστούμε! Dziękujemy! Payment in £ or € to the account on file.',
+			vat: VatTreatment::Export,
+			supply_date: '18 November 2026',
+		);
+	}
+
+	/**
+	 * A whole invoice set in the bundled family, accents and all.
+	 *
+	 * @return Invoice
+	 */
+	public static function typeface(): Invoice {
+		$brand  = self::branding();
+		$totals = new Totals(
+			lines: array(
+				new TotalsLine( 'Dvořák string library — 24-bit', 21900, note: 'Šťastný nový rok' ),
+				new TotalsLine( 'Kırıkkale percussion', 6900 ),
+			),
+			currency: 'EUR',
+			rate: 21,
+		);
+
+		return new Invoice(
+			branding: new Branding( $brand->name, $brand->tagline, '#1F5FBF', $brand->logo_path, $brand->logo_box, footnotes: $brand->footnotes, typeface: FontFamily::noto_sans() ),
+			number: 'INV-2026-0051',
+			from: self::seller(),
+			to: new Party( 'Zoë Dvořáková', array( 'Václavské náměstí 1', '110 00 Praha 1', 'Česko' ), tax_id: 'CZ12345678' ),
+			items: $totals->items(),
+			totals: $totals->rows(),
+			total: $totals->total(),
+			supply_date: '18 November 2026',
+			status: 'Due',
 		);
 	}
 }

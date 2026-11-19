@@ -16,7 +16,10 @@ namespace SugarCommerce\Pdf;
  * Enum Font
  *
  * The base-14 fonts every PDF reader is required to have, so nothing
- * needs embedding and the output stays a few kilobytes.
+ * needs embedding and the output stays a few kilobytes — and the roles
+ * layout code asks for: regular, bold, italic, monospaced. A document set
+ * in a {@see FontFamily} draws each role in the family's face instead,
+ * and these become the fallback.
  *
  * The width tables are the reason this library can lay out a table at
  * all. Helvetica is proportional — a space is 278 units where a capital
@@ -47,11 +50,27 @@ enum Font: string {
 	case Courier = 'Courier';
 
 	/**
-	 * Character widths for ASCII 32-126, in 1/1000 em.
+	 * Helvetica-Oblique, for emphasis (since 1.3.0). Helvetica's widths.
+	 */
+	case HelveticaOblique = 'Helvetica-Oblique';
+
+	/**
+	 * Character widths across WinAnsiEncoding, in 1/1000 em.
+	 *
+	 * The whole byte range, not just ASCII (since 1.3.0): a euro sign or an
+	 * accented name measured at a stand-in width throws a right-aligned
+	 * column out by a few points. The same table is published as the
+	 * font's `/Widths`, so the reader advances text exactly as it was
+	 * measured.
+	 *
+	 * One deliberate deviation from Adobe's metrics: the euro is 744, not
+	 * 556. The Helveticas in circulation disagree about that glyph alone,
+	 * and a declared width too narrow draws the next digit through the
+	 * symbol, where one too wide leaves a thin space nobody notices.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array<int, int> Code point => width.
+	 * @return array<int, int> WinAnsi byte => width.
 	 */
 	public function widths(): array {
 		// Built once per font: width_of() runs for every cell, line and
@@ -61,10 +80,50 @@ enum Font: string {
 		static $tables = array();
 
 		return $tables[ $this->value ] ??= match ( $this ) {
-			self::Courier       => array_fill( 32, 95, 600 ),
-			self::Helvetica     => self::helvetica_widths(),
-			self::HelveticaBold => self::helvetica_bold_widths(),
+			self::Courier                            => array_map( static fn(): int => 600, self::helvetica_widths() ),
+			self::Helvetica, self::HelveticaOblique => self::helvetica_widths(),
+			self::HelveticaBold                      => self::helvetica_bold_widths(),
 		};
+	}
+
+	/**
+	 * The name the page's resources call this font by.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string
+	 */
+	public function resource(): string {
+		return match ( $this ) {
+			self::Helvetica        => 'F1',
+			self::HelveticaBold    => 'F2',
+			self::Courier          => 'F3',
+			self::HelveticaOblique => 'F4',
+		};
+	}
+
+	/**
+	 * The font's dictionary, with its widths published.
+	 *
+	 * The widths are optional for these fonts — a reader is required to
+	 * know Helvetica already — but leaving them out means trusting its
+	 * built-in table, and those predate the euro: without them a euro is
+	 * advanced by nothing and the next digit drawn on top of it.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string
+	 */
+	public function dictionary(): string {
+		$table  = $this->widths();
+		$widths = array();
+
+		for ( $byte = 32; $byte <= 255; $byte++ ) {
+			$widths[] = $table[ $byte ] ?? 0;
+		}
+
+		return '<</Type /Font /Subtype /Type1 /BaseFont /' . $this->value . ' /Encoding /WinAnsiEncoding'
+			. ' /FirstChar 32 /LastChar 255 /Widths [' . implode( ' ', $widths ) . ']>>';
 	}
 
 	/**
@@ -140,9 +199,9 @@ enum Font: string {
 	/**
 	 * The width of a string at a given size, in points.
 	 *
-	 * Characters outside the table — accented letters, currency symbols —
-	 * fall back to the width of `n`, which is close enough that a column
-	 * does not visibly drift.
+	 * Takes WinAnsi bytes, as {@see Document::escape()} makes them. A byte
+	 * outside the table — one of the five WinAnsi leaves undefined, or
+	 * UTF-8 passed by mistake — falls back to the width of `n`.
 	 *
 	 * @since 1.0.0
 	 *
@@ -247,7 +306,23 @@ enum Font: string {
 			96 => 333, 97 => 556, 98 => 556, 99 => 500, 100 => 556, 101 => 556, 102 => 278, 103 => 556,
 			104 => 556, 105 => 222, 106 => 222, 107 => 500, 108 => 222, 109 => 833, 110 => 556, 111 => 556,
 			112 => 556, 113 => 556, 114 => 333, 115 => 500, 116 => 278, 117 => 556, 118 => 500, 119 => 722,
-			120 => 500, 121 => 500, 122 => 500, 123 => 334, 124 => 260, 125 => 334, 126 => 584,
+			120 => 500, 121 => 500, 122 => 500, 123 => 334, 124 => 260, 125 => 334, 126 => 584, 128 => 744,
+			130 => 222, 131 => 556, 132 => 333, 133 => 1000, 134 => 556, 135 => 556, 136 => 333, 137 => 1000,
+			138 => 667, 139 => 333, 140 => 1000, 142 => 611, 145 => 222, 146 => 222, 147 => 333, 148 => 333,
+			149 => 350, 150 => 556, 151 => 1000, 152 => 333, 153 => 1000, 154 => 500, 155 => 333, 156 => 944,
+			158 => 500, 159 => 667, 160 => 278, 161 => 333, 162 => 556, 163 => 556, 164 => 556, 165 => 556,
+			166 => 260, 167 => 556, 168 => 333, 169 => 737, 170 => 370, 171 => 556, 172 => 584, 173 => 333,
+			174 => 737, 175 => 552, 176 => 400, 177 => 549, 178 => 333, 179 => 333, 180 => 333, 181 => 576,
+			182 => 537, 183 => 333, 184 => 333, 185 => 333, 186 => 365, 187 => 556, 188 => 834, 189 => 834,
+			190 => 834, 191 => 611, 192 => 667, 193 => 667, 194 => 667, 195 => 667, 196 => 667, 197 => 667,
+			198 => 1000, 199 => 722, 200 => 667, 201 => 667, 202 => 667, 203 => 667, 204 => 278, 205 => 278,
+			206 => 278, 207 => 278, 208 => 722, 209 => 722, 210 => 778, 211 => 778, 212 => 778, 213 => 778,
+			214 => 778, 215 => 584, 216 => 778, 217 => 722, 218 => 722, 219 => 722, 220 => 722, 221 => 667,
+			222 => 667, 223 => 611, 224 => 556, 225 => 556, 226 => 556, 227 => 556, 228 => 556, 229 => 556,
+			230 => 889, 231 => 500, 232 => 556, 233 => 556, 234 => 556, 235 => 556, 236 => 278, 237 => 278,
+			238 => 278, 239 => 278, 240 => 556, 241 => 556, 242 => 556, 243 => 556, 244 => 556, 245 => 556,
+			246 => 556, 247 => 549, 248 => 611, 249 => 556, 250 => 556, 251 => 556, 252 => 556, 253 => 500,
+			254 => 556, 255 => 500,
 		);
 	}
 
@@ -271,7 +346,23 @@ enum Font: string {
 			96 => 333, 97 => 556, 98 => 611, 99 => 556, 100 => 611, 101 => 556, 102 => 333, 103 => 611,
 			104 => 611, 105 => 278, 106 => 278, 107 => 556, 108 => 278, 109 => 889, 110 => 611, 111 => 611,
 			112 => 611, 113 => 611, 114 => 389, 115 => 556, 116 => 333, 117 => 611, 118 => 556, 119 => 778,
-			120 => 556, 121 => 556, 122 => 500, 123 => 389, 124 => 280, 125 => 389, 126 => 584,
+			120 => 556, 121 => 556, 122 => 500, 123 => 389, 124 => 280, 125 => 389, 126 => 584, 128 => 744,
+			130 => 278, 131 => 556, 132 => 500, 133 => 1000, 134 => 556, 135 => 556, 136 => 333, 137 => 1000,
+			138 => 667, 139 => 333, 140 => 1000, 142 => 611, 145 => 278, 146 => 278, 147 => 500, 148 => 500,
+			149 => 350, 150 => 556, 151 => 1000, 152 => 333, 153 => 1000, 154 => 556, 155 => 333, 156 => 944,
+			158 => 500, 159 => 667, 160 => 278, 161 => 333, 162 => 556, 163 => 556, 164 => 556, 165 => 556,
+			166 => 280, 167 => 556, 168 => 333, 169 => 737, 170 => 370, 171 => 556, 172 => 584, 173 => 333,
+			174 => 737, 175 => 552, 176 => 400, 177 => 549, 178 => 333, 179 => 333, 180 => 333, 181 => 576,
+			182 => 556, 183 => 333, 184 => 333, 185 => 333, 186 => 365, 187 => 556, 188 => 834, 189 => 834,
+			190 => 834, 191 => 611, 192 => 722, 193 => 722, 194 => 722, 195 => 722, 196 => 722, 197 => 722,
+			198 => 1000, 199 => 722, 200 => 667, 201 => 667, 202 => 667, 203 => 667, 204 => 278, 205 => 278,
+			206 => 278, 207 => 278, 208 => 722, 209 => 722, 210 => 778, 211 => 778, 212 => 778, 213 => 778,
+			214 => 778, 215 => 584, 216 => 778, 217 => 722, 218 => 722, 219 => 722, 220 => 722, 221 => 667,
+			222 => 667, 223 => 611, 224 => 556, 225 => 556, 226 => 556, 227 => 556, 228 => 556, 229 => 556,
+			230 => 889, 231 => 556, 232 => 556, 233 => 556, 234 => 556, 235 => 556, 236 => 278, 237 => 278,
+			238 => 278, 239 => 278, 240 => 611, 241 => 611, 242 => 611, 243 => 611, 244 => 611, 245 => 611,
+			246 => 611, 247 => 549, 248 => 611, 249 => 611, 250 => 611, 251 => 611, 252 => 611, 253 => 556,
+			254 => 611, 255 => 556,
 		);
 	}
 }

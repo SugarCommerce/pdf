@@ -76,7 +76,10 @@ final readonly class Receipt {
 	public function render(): Document {
 		$pdf   = new Document( $this->size, Orientation::Portrait, margin: 40, font_size: 9, leading: 12 );
 		$brand = $this->branding;
-		$top   = $pdf->height() - 40;
+
+		$pdf->family( $brand->typeface );
+
+		$top = $pdf->height() - 40;
 
 		if ( null !== $brand->logo_path ) {
 			$pdf->svg_path( $brand->logo_path, $pdf->left(), $top - 26, 26 / $brand->logo_box, $brand->ink(), $brand->logo_box );
@@ -94,7 +97,7 @@ final readonly class Receipt {
 		$lines  = $brand->seller_lines( $brand->seller( $this->from ), $this->translator );
 
 		if ( array() !== $lines ) {
-			$pdf->move_to( $top - 26 + Font::Helvetica->ascender( 7.5 ) );
+			$pdf->move_to( $top - 26 + $pdf->ascender( 7.5 ) );
 			$pdf->block( implode( "\n", $lines ), $x, $pdf->content_width() * 0.55, 7.5, Font::Helvetica, $brand->muted(), Align::Left, 9.5 );
 			$rule_y = min( $rule_y, $pdf->cursor() - 6 );
 		}

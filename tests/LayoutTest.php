@@ -32,7 +32,7 @@ final class LayoutTest extends TestCase {
 
 		foreach ( $runs as $run ) {
 			$this->assertSame( 100.0, $run['x'] );
-			$this->assertLessThanOrEqual( 250.0, $run['x'] + Font::Helvetica->width_of( $run['text'], 9 ) );
+			$this->assertLessThanOrEqual( 250.0, $run['x'] + $run['width'] );
 		}
 	}
 
@@ -62,7 +62,7 @@ final class LayoutTest extends TestCase {
 		foreach ( $pages as $runs ) {
 			foreach ( $runs as $run ) {
 				$this->assertGreaterThanOrEqual( $pdf->margin - 3, $run['y'] );
-				$this->assertLessThanOrEqual( $pdf->right() + 0.01, $run['x'] + Font::Helvetica->width_of( $run['text'], $run['size'] ) );
+				$this->assertLessThanOrEqual( $pdf->right() + 0.01, $run['x'] + $run['width'] );
 			}
 		}
 
@@ -125,9 +125,22 @@ final class LayoutTest extends TestCase {
 	}
 
 	public function test_drawn_text_is_what_a_reader_extracts(): void {
-		$pdf = ( new Document() )->text( 'Łódź' )->text( 'Ярослав' )->text( '€5' );
+		$pdf   = ( new Document() )->text( 'Łódź' )->text( 'Ярослав' )->text( '€5' )->text( 'Tokyo 東京' );
+		$bytes = $pdf->render( self::CREATED );
+
+		$this->assertSame( array( 'Łódź', 'Ярослав', '€5', 'Tokyo ??' ), $pdf->drawn_text() );
+		$this->assertSame( $pdf->drawn_text(), array_column( Reader::runs( $bytes )[0], 'text' ) );
+	}
+
+	/**
+	 * With the fallback switched off, the base fonts print what they can,
+	 * as before there was one.
+	 */
+	public function test_drawn_text_without_a_fallback_is_what_windows_1252_holds(): void {
+		$pdf = ( new Document() )->fallback( null )->text( 'Łódź' )->text( 'Ярослав' )->text( '€5' );
 
 		$this->assertSame( array( 'Lódz', '???????', '€5' ), $pdf->drawn_text() );
+		$this->assertSame( array( 'Łódź', 'Ярослав' ), $pdf->substitutions() );
 	}
 
 	public function test_drawn_text_has_the_footers_once_however_often_it_is_rendered(): void {
@@ -160,7 +173,7 @@ final class LayoutTest extends TestCase {
 		$this->assertNotContains( '...', array_map( static fn( string $t ): string => substr( $t, -3 ), $texts ) );
 
 		$note   = $runs[ array_search( 'The note, which is not lost', $texts, true ) ];
-		$amount = $runs[ array_search( "\x801.00", $texts, true ) ];
+		$amount = $runs[ array_search( '€1.00', $texts, true ) ];
 
 		$this->assertLessThan( $amount['y'], $note['y'] );
 		$this->assertSame( $amount['y'], $runs[2]['y'], 'Every column starts on the first line.' );
@@ -293,7 +306,7 @@ final class LayoutTest extends TestCase {
 
 		foreach ( Reader::runs( $bytes ) as $runs ) {
 			foreach ( $runs as $run ) {
-				$this->assertLessThanOrEqual( $pdf->right() + 0.01, $run['x'] + Reader::font( $run['font'] )->width_of( $run['text'], $run['size'] ), $run['text'] );
+				$this->assertLessThanOrEqual( $pdf->right() + 0.01, $run['x'] + $run['width'], $run['text'] );
 				$this->assertGreaterThanOrEqual( 20.0, $run['y'] );
 			}
 		}
@@ -314,7 +327,7 @@ final class LayoutTest extends TestCase {
 		$text  = Reader::text( $bytes );
 
 		$this->assertSame( 60, substr_count( $text, 'Licence period 2026' ) );
-		$this->assertSame( 60, substr_count( $text, 'Lódz' ) );
+		$this->assertSame( 60, substr_count( $text, 'Ярослав Łódź' ) );
 		$this->assertStringNotContainsString( 'col...', $text );
 	}
 }

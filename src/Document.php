@@ -18,19 +18,27 @@ use SugarCommerce\Qr\QR;
  * Class Document
  *
  * Builds invoices, statements and reports — text, tables, rules, boxes
- * and vector logos — with no dependencies and no embedded fonts.
+ * and vector logos — with no dependencies.
  *
- * Uses the base-14 fonts every reader is required to have, so output is
- * a few kilobytes rather than a few hundred. Real font metrics are
- * carried (see {@see Font}), which is what makes right-aligned money
- * columns and measured table layout possible at all — padding with
- * spaces only lines up in a monospace font.
+ * Text is set in the base-14 fonts every reader is required to have, so
+ * a document in a Western European language is a few kilobytes. Real
+ * font metrics are carried (see {@see Font}), which is what makes
+ * right-aligned money columns and measured table layout possible at all —
+ * padding with spaces only lines up in a monospace font.
  *
- * **What it cannot do.** WinAnsi encoding covers Latin-1 and a few more
- * (€, curly quotes, dashes), and other Latin letters lose their accents,
- * so Cyrillic, Greek, Hebrew, Arabic and CJK will not render. Those need an embedded
- * font, and embedding fonts is where this stops and a real PDF library
- * starts.
+ * Those fonts know Windows-1252 and nothing else. A word they cannot
+ * print as written — `Łódź`, `Ярослав`, `Ελένη` — is drawn in an embedded
+ * {@see FontFamily} instead, the bundled Noto Sans unless another is set
+ * with {@see fallback()}, and only the glyphs drawn are embedded. A
+ * document can also be set in a family throughout ({@see family()}),
+ * which then draws everything it can and leaves the base fonts as the
+ * fallback.
+ *
+ * **What it cannot do.** Right-to-left and shaped scripts — Arabic,
+ * Hebrew, the Indic scripts — need a shaping engine to reorder letters
+ * and join them, which this is not. They are printed as `?` and reported
+ * by {@see substitutions()} rather than drawn in the wrong order. So is
+ * anything no font in reach has a glyph for.
  *
  * @since 1.0.0
  */
@@ -99,6 +107,51 @@ final class Document {
 	 * The document's language, as a BCP 47 tag, or empty.
 	 */
 	private string $language = '';
+
+	/**
+	 * The family the document is set in, or null for the base fonts.
+	 */
+	private ?FontFamily $family = null;
+
+	/**
+	 * The family for words the base fonts cannot print; null for none.
+	 */
+	private ?FontFamily $fallback = null;
+
+	/**
+	 * Whether {@see fallback()} has been called; until it is, the bundled
+	 * family is the fallback, read the first time a word needs it.
+	 */
+	private bool $fallback_chosen = false;
+
+	/**
+	 * What each embedded font has drawn, by the font's object ID.
+	 *
+	 * @var array<int, FontSubset>
+	 */
+	private array $subsets = array();
+
+	/**
+	 * Font resources in the order first used: a base font, or an embedded
+	 * font by its object ID.
+	 *
+	 * @var array<string, Font|int>
+	 */
+	private array $resources = array();
+
+	/**
+	 * Text that did not reach the page as written.
+	 *
+	 * @var list<string>
+	 */
+	private array $substituted = array();
+
+	/**
+	 * Which font draws each word, by role, for words seen before.
+	 *
+	 * @var array<string, list<array{0: TrueType|null, 1: string, 2: bool}>>
+	 */
+	private array $resolved = array();
 
 	/**
 	 * Start an empty document with the cursor at the top margin.
@@ -264,6 +317,157 @@ final class Document {
 		return $this->language;
 	}
 
+	/* ─── Type ──────────────────────────────────────────────────────── */
+
+	/**
+	 * Set the document in a family of embedded fonts.
+	 *
+	 * Every role is drawn in the family's face for it — Helvetica as the
+	 * regular, Helvetica-Bold as the bold — so a layout written for the
+	 * base fonts is set in the family unchanged. A word the family has no
+	 * glyphs for falls back to the base fonts, then to {@see fallback()}.
+	 *
+	 * Set it before drawing: text already on the page stays as it was
+	 * drawn, and measuring done before it was set was done in Helvetica.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param FontFamily|null $family The family, or null for the base fonts.
+	 *
+	 * @return self
+	 */
+	public function family( ?FontFamily $family ): self {
+		$this->family   = $family;
+		$this->resolved = array();
+
+		return $this;
+	}
+
+	/**
+	 * The family the document is set in, or null.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return FontFamily|null
+	 */
+	public function font_family(): ?FontFamily {
+		return $this->family;
+	}
+
+	/**
+	 * Choose the family for words the base fonts cannot print.
+	 *
+	 * The bundled Noto Sans until this is called, which covers Latin,
+	 * Greek and Cyrillic. Pass another to cover more — a Noto CJK face
+	 * for Japanese, say — or null to embed nothing and print what
+	 * Windows-1252 lacks as its nearest letter or `?`, as before 1.3.0.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param FontFamily|null $family The fallback, or null for none.
+	 *
+	 * @return self
+	 */
+	public function fallback( ?FontFamily $family ): self {
+		$this->fallback        = $family;
+		$this->fallback_chosen = true;
+		$this->resolved        = array();
+
+		return $this;
+	}
+
+	/**
+	 * Every run of text that did not reach the page as written.
+	 *
+	 * A character no font in reach has, or one in a script this cannot
+	 * lay out (Arabic, Hebrew, the Indic scripts), is printed as `?` or
+	 * its nearest letter. That looks like a typo rather than a fault on
+	 * the page, so it is listed here for a template to warn about.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return list<string>
+	 */
+	public function substitutions(): array {
+		return $this->substituted;
+	}
+
+	/**
+	 * Distance from the top of a line box down to the baseline.
+	 *
+	 * The base font's, or the family's face's for the role. A face's own
+	 * ascender is not used: fonts reserve room above the capitals for
+	 * accents and stacked marks — Noto Sans a full 1.07 em — and a layout
+	 * built on Helvetica's line boxes would move every line down a third
+	 * of an em. Instead the face gets the headroom Helvetica has above
+	 * its capitals, so text sits in a box the same way whichever face
+	 * draws it.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param float|null $size Font size, or null for the document default.
+	 * @param Font       $font Role.
+	 *
+	 * @return float
+	 */
+	public function ascender( ?float $size = null, Font $font = Font::Helvetica ): float {
+		$size ??= $this->font_size;
+		$face   = $this->family?->face( $font );
+
+		return null === $face ? $font->ascender( $size ) : $size * ( $face->cap_height + 63 ) / 1000;
+	}
+
+	/**
+	 * The height of a capital letter, in the face that draws the role.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param float|null $size Font size, or null for the document default.
+	 * @param Font       $font Role.
+	 *
+	 * @return float
+	 */
+	public function cap_height( ?float $size = null, Font $font = Font::Helvetica ): float {
+		$size ??= $this->font_size;
+		$face   = $this->family?->face( $font );
+
+		return null === $face ? $font->cap_height( $size ) : $size * $face->cap_height / 1000;
+	}
+
+	/**
+	 * How far the descender falls below the baseline, in the face that
+	 * draws the role.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param float|null $size Font size, or null for the document default.
+	 * @param Font       $font Role.
+	 *
+	 * @return float
+	 */
+	public function descender( ?float $size = null, Font $font = Font::Helvetica ): float {
+		$size ??= $this->font_size;
+		$face   = $this->family?->face( $font );
+
+		return null === $face ? $font->descender( $size ) : $size * abs( $face->descender ) / 1000;
+	}
+
+	/**
+	 * Baseline offset for text vertically centred in a band: equal space
+	 * above the capitals and below the baseline.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param float      $band_height Height of the band.
+	 * @param float|null $size        Font size, or null for the document default.
+	 * @param Font       $font        Role.
+	 *
+	 * @return float Distance from the band top down to the baseline.
+	 */
+	public function baseline_in_band( float $band_height, ?float $size = null, Font $font = Font::Helvetica ): float {
+		return ( $band_height + $this->cap_height( $size, $font ) ) / 2;
+	}
+
 	/**
 	 * Move the cursor down.
 	 *
@@ -395,7 +599,7 @@ final class Document {
 			$this->text_at(
 				$line,
 				$this->margin,
-				$this->y - $font->ascender( $size ),
+				$this->y - $this->ascender( $size, $font ),
 				$size,
 				$font,
 				$color,
@@ -454,7 +658,7 @@ final class Document {
 	): self {
 		$size ??= $this->font_size;
 
-		return $this->text_at( $text, $x, $this->y - $font->ascender( $size ), $size, $font, $color, $align, $box_width );
+		return $this->text_at( $text, $x, $this->y - $this->ascender( $size, $font ), $size, $font, $color, $align, $box_width );
 	}
 
 	/**
@@ -493,7 +697,7 @@ final class Document {
 		return $this->text_at(
 			$text,
 			$x,
-			$this->y - $font->baseline_in_band( $band_height, $size ),
+			$this->y - $this->baseline_in_band( $band_height, $size, $font ),
 			$size,
 			$font,
 			$color,
@@ -532,19 +736,63 @@ final class Document {
 			return $this;
 		}
 
-		$shown   = self::winansi( $text );
-		$escaped = str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $shown );
+		$size    = self::number( $size );
+		$pieces  = $this->pieces( $text, $font );
+		$drawn   = '';
+		$measure = 0.0;
+		$show    = '';
+		$current = '';
+		$lossy   = false;
+
+		foreach ( $pieces as [ $face, $piece, $replaced ] ) {
+			$lossy = $lossy || $replaced;
+
+			if ( null === $face ) {
+				$bytes = self::winansi( $piece );
+
+				if ( '' === $bytes ) {
+					continue;
+				}
+
+				$resource  = $this->resource( $font );
+				$operand   = '(' . str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $bytes ) . ')';
+				$measure  += $font->width_of( $bytes, $size );
+				$drawn    .= (string) mb_convert_encoding( $bytes, 'UTF-8', 'Windows-1252' );
+			} else {
+				$resource  = $this->resource( $face );
+				$operand   = '<' . $this->subsets[ spl_object_id( $face ) ]->encode( $piece ) . '>';
+				$measure  += $face->width_of( $piece, $size );
+				$drawn    .= $piece;
+			}
+
+			// One text object for the whole run, switching font only where
+			// the face changes: each show advances from where the last
+			// ended, so the pieces sit together as one line.
+			if ( $resource !== $current ) {
+				$show   .= sprintf( "/%s %.2F Tf\n", $resource, $size );
+				$current = $resource;
+			}
+
+			$show .= $operand . " Tj\n";
+		}
+
+		if ( '' === $show ) {
+			return $this;
+		}
 
 		// What a reader will extract, not what was asked for: a name the
-		// encoding cannot hold has not reached the page as written.
-		$this->drawn[] = (string) mb_convert_encoding( $shown, 'UTF-8', 'Windows-1252' );
+		// fonts could not hold has not reached the page as written.
+		$this->drawn[] = $drawn;
+
+		if ( $lossy && ! in_array( $text, $this->substituted, true ) ) {
+			$this->substituted[] = $text;
+		}
 
 		// Alignment is computed from the measured width — the reason the
 		// font metrics exist at all. The escaping backslashes are never
 		// drawn, so they are not measured.
 		if ( Align::Left !== $align && $box_width > 0 ) {
-			$measured = $font->width_of( $shown, $size );
-			$x       += Align::Right === $align ? $box_width - $measured : ( $box_width - $measured ) / 2;
+			$x += Align::Right === $align ? $box_width - $measure : ( $box_width - $measure ) / 2;
 		}
 
 		$color ??= Color::black();
@@ -555,16 +803,29 @@ final class Document {
 			$this->current .= $color->operands() . " rg\n";
 		}
 
-		$this->current .= sprintf(
-			"BT\n/%s %.2F Tf\n%.2F %.2F Td\n(%s) Tj\nET\nQ\n",
-			self::font_resource( $font ),
-			self::number( $size ),
-			self::number( $x ),
-			self::number( $y ),
-			$escaped
-		);
+		// The position goes after the first font is chosen, as it always
+		// has: one Tf, one Td, one Tj for a run in a single font.
+		$position       = sprintf( "%.2F %.2F Td\n", self::number( $x ), self::number( $y ) );
+		$this->current .= "BT\n" . self::positioned( $show, $position ) . "ET\nQ\n";
 
 		return $this;
+	}
+
+	/**
+	 * Font selections and shows with the text position put in after the
+	 * first selection.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $show     Font selections and shows.
+	 * @param string $position The `Td` line.
+	 *
+	 * @return string
+	 */
+	private static function positioned( string $show, string $position ): string {
+		$at = (int) strpos( $show, "Tf\n" ) + 3;
+
+		return substr( $show, 0, $at ) . $position . substr( $show, $at );
 	}
 
 	/**
@@ -609,9 +870,9 @@ final class Document {
 			$column = $widths[ $index ] ?? ( $this->content_width() / $count );
 
 			$this->text_at(
-				$font->truncate( (string) $cell, $column - 6, $size ),
+				$this->fit( (string) $cell, $column - 6, $size, $font ),
 				$x,
-				$this->y - $font->ascender( $size ),
+				$this->y - $this->ascender( $size, $font ),
 				$size,
 				$font,
 				$color,
@@ -670,7 +931,7 @@ final class Document {
 			$this->break_if_needed( $step );
 
 			if ( '' !== $line ) {
-				$this->text_at( $line, $x, $this->y - $font->ascender( $size ), $size, $font, $color, $align, $width );
+				$this->text_at( $line, $x, $this->y - $this->ascender( $size, $font ), $size, $font, $color, $align, $width );
 			}
 
 			$this->y -= $step;
@@ -723,8 +984,10 @@ final class Document {
 	/**
 	 * The width of text as this document will draw it.
 	 *
-	 * Measured after transcoding, so `€` counts as the one character it
-	 * prints as rather than the three bytes it is in UTF-8.
+	 * In the face each word will be drawn in — the family's, a base font,
+	 * or the fallback — and after transcoding, so `€` in Helvetica counts
+	 * as the one character it prints as rather than the three bytes it is
+	 * in UTF-8.
 	 *
 	 * @since 1.2.0
 	 *
@@ -735,7 +998,14 @@ final class Document {
 	 * @return float
 	 */
 	public function width( string $text, ?float $size = null, Font $font = Font::Helvetica ): float {
-		return $font->width_of( self::winansi( $text ), $size ?? $this->font_size );
+		$size ??= $this->font_size;
+		$total  = 0.0;
+
+		foreach ( $this->pieces( $text, $font ) as [ $face, $piece ] ) {
+			$total += null === $face ? $font->width_of( self::winansi( $piece ), $size ) : $face->width_of( $piece, $size );
+		}
+
+		return $total;
 	}
 
 	/**
@@ -757,12 +1027,12 @@ final class Document {
 			return $text;
 		}
 
-		$budget = $width - $font->width_of( '...', $size );
+		$budget = $width - $this->width( '...', $size, $font );
 		$kept   = '';
 		$used   = 0.0;
 
-		foreach ( self::characters( $text ) as $character ) {
-			$used += $font->width_of( self::winansi( $character ), $size );
+		foreach ( $this->advances( $text, $font, $size ) as [ $character, $advance ] ) {
+			$used += $advance;
 
 			if ( $used > $budget ) {
 				break;
@@ -771,15 +1041,22 @@ final class Document {
 			$kept .= $character;
 		}
 
+		// Checked as drawn, as a cut piece is: the shortened last word may
+		// resolve to another face than the whole word was measured in.
+		while ( '' !== $kept && $this->width( rtrim( $kept ) . '...', $size, $font ) > $width ) {
+			$kept = mb_substr( $kept, 0, -1, 'UTF-8' );
+		}
+
 		return rtrim( $kept ) . '...';
 	}
 
 	/**
 	 * Every run of text drawn so far, as a reader will extract it.
 	 *
-	 * Text is recorded after transcoding — a name Windows-1252 cannot
-	 * hold is recorded the way it was printed — and includes what the
-	 * footer draws on each page.
+	 * The characters as they reached the page: a word drawn in an embedded
+	 * font is recorded as written, one the base fonts printed is recorded
+	 * as they printed it — `?` for a character nothing could draw. It
+	 * includes what the footer draws on each page.
 	 *
 	 * @since 1.2.0
 	 *
@@ -790,14 +1067,22 @@ final class Document {
 			return $this->drawn;
 		}
 
-		$saved   = $this->drawn;
-		$pages   = $this->pages;
-		$pages[] = $this->current;
+		// The footers are drawn to be read, not kept: the glyphs and fonts
+		// they use are put back too, or asking would change the file.
+		$saved       = $this->drawn;
+		$resources   = $this->resources;
+		$substituted = $this->substituted;
+		$subsets     = array_map( static fn( FontSubset $subset ): FontSubset => clone $subset, $this->subsets );
+		$pages       = $this->pages;
+		$pages[]     = $this->current;
 
 		$this->apply_footers( $pages );
 
-		$footers     = array_slice( $this->drawn, count( $saved ) );
-		$this->drawn = $saved;
+		$footers           = array_slice( $this->drawn, count( $saved ) );
+		$this->drawn       = $saved;
+		$this->resources   = $resources;
+		$this->substituted = $substituted;
+		$this->subsets     = $subsets;
 
 		return array_merge( $saved, $footers );
 	}
@@ -1028,7 +1313,13 @@ final class Document {
 		// rendering twice must not record the page numbers twice.
 		$this->drawn = $saved;
 
-		return Writer::write( $stamped, $this->page_width, $this->page_height, $metadata, $this->language );
+		$fonts = array();
+
+		foreach ( $this->resources as $resource => $font ) {
+			$fonts[ $resource ] = $font instanceof Font ? $font : $this->subsets[ $font ];
+		}
+
+		return Writer::write( $stamped, $this->page_width, $this->page_height, $metadata, $this->language, $fonts );
 	}
 
 	/**
@@ -1102,7 +1393,7 @@ final class Document {
 	 */
 	private function wrap( string $text, Font $font, float $size, float $width ): array {
 		$lines = array();
-		$space = $font->width_of( ' ', $size );
+		$space = $this->width( ' ', $size, $font );
 
 		foreach ( explode( "\n", $text ) as $paragraph ) {
 			$paragraph = rtrim( $paragraph );
@@ -1120,7 +1411,7 @@ final class Document {
 			// exactly its words and the spaces between them. Re-measuring
 			// the whole line for every word is quadratic in its length.
 			foreach ( explode( ' ', $paragraph ) as $word ) {
-				$advance = $font->width_of( self::winansi( $word ), $size );
+				$advance = $this->width( $word, $size, $font );
 
 				if ( '' === $line && $advance <= $width ) {
 					$line = $word;
@@ -1140,8 +1431,8 @@ final class Document {
 
 				// A single word wider than the column — a long URL, say —
 				// must be cut or it runs off the page.
-				$line = $advance > $width ? self::cut( $word, $font, $size, $width, $lines ) : $word;
-				$used = $font->width_of( self::winansi( $line ), $size );
+				$line = $advance > $width ? $this->cut( $word, $font, $size, $width, $lines ) : $word;
+				$used = $this->width( $line, $size, $font );
 			}
 
 			if ( '' !== $line ) {
@@ -1173,21 +1464,18 @@ final class Document {
 	 *
 	 * @return string The last, partial piece, which later words may join.
 	 */
-	private static function cut( string $word, Font $font, float $size, float $width, array &$lines ): string {
-		$piece    = '';
-		$used     = 0.0;
-		$measured = array();
+	private function cut( string $word, Font $font, float $size, float $width, array &$lines ): string {
+		$piece = '';
+		$used  = 0.0;
 
-		foreach ( self::characters( $word ) as $character ) {
-			$advance = $measured[ $character ] ??= $font->width_of( self::winansi( $character ), $size );
-
+		foreach ( $this->advances( $word, $font, $size ) as [ $character, $advance ] ) {
 			// Never emit an empty piece: a single character wider than the
 			// column stands on a line of its own, which also guarantees
 			// the walk makes progress.
 			if ( '' !== $piece && $used + $advance > $width ) {
-				$lines[] = $piece;
-				$piece   = '';
-				$used    = 0.0;
+				[ $lines[], $piece ] = $this->settle( $piece, $font, $size, $width );
+
+				$used = $this->width( $piece, $size, $font );
 			}
 
 			$piece .= $character;
@@ -1198,20 +1486,301 @@ final class Document {
 	}
 
 	/**
-	 * The resource name for a font.
+	 * A cut piece, checked as it will be drawn.
 	 *
-	 * @since 1.0.0
+	 * The characters were measured in the face their whole word resolves
+	 * to, and a piece is resolved again on its own: the head of a long
+	 * Polish URL is plain ASCII and is drawn in Helvetica, not the Noto
+	 * it was measured in. Where that makes it wider, characters move on
+	 * to the next piece until it fits. Usually there is nothing to move.
 	 *
-	 * @param Font $font Typeface.
+	 * @since 1.3.0
+	 *
+	 * @param string $piece The piece.
+	 * @param Font   $font  Role.
+	 * @param float  $size  Font size.
+	 * @param float  $width Column width.
+	 *
+	 * @return array{0: string, 1: string} The piece that fits, and what moves on.
+	 */
+	private function settle( string $piece, Font $font, float $size, float $width ): array {
+		$carry = '';
+
+		while ( mb_strlen( $piece, 'UTF-8' ) > 1 && $this->width( $piece, $size, $font ) > $width ) {
+			$carry = mb_substr( $piece, -1, null, 'UTF-8' ) . $carry;
+			$piece = mb_substr( $piece, 0, -1, 'UTF-8' );
+		}
+
+		return array( $piece, $carry );
+	}
+
+	/**
+	 * Text split into the pieces each font draws.
+	 *
+	 * Decided a word at a time, so a word is never set in two faces: in
+	 * the family when it has every glyph; otherwise in the base font when
+	 * Windows-1252 holds it exactly; otherwise in the fallback when that
+	 * has every glyph. Only a word none of them can draw whole is split,
+	 * character by character, down the same order — and a character
+	 * nothing has goes to the base font, to print as its nearest letter
+	 * or `?`, flagged so it is reported.
+	 *
+	 * Spaces are words of their own. That keeps a line's width exactly its
+	 * words' widths plus its spaces', which is what wrapping adds up.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $text Text.
+	 * @param Font   $font Role.
+	 *
+	 * @return list<array{0: TrueType|null, 1: string, 2: bool}> Face (null
+	 *         for the base font), the piece, and whether any of it will
+	 *         not print as written.
+	 */
+	private function pieces( string $text, Font $font ): array {
+		if ( ! mb_check_encoding( $text, 'UTF-8' ) ) {
+			return array( array( null, $text, 1 === preg_match( '/[\x80-\xFF]/', $text ) ) );
+		}
+
+		$primary = $this->family?->face( $font );
+
+		// Plain ASCII in the base fonts, which is most of every invoice.
+		if ( null === $primary && 1 !== preg_match( '/[\x80-\xFF]/', $text ) ) {
+			return array( array( null, $text, false ) );
+		}
+
+		$text   = self::composed( (string) preg_replace( '/[\x00-\x1F\x7F]/', '', $text ) );
+		$pieces = array();
+
+		foreach ( preg_split( '/( )/', $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY ) ?: array() as $word ) {
+			$key = $font->value . "\0" . $word;
+
+			// A bound on the cache: a long document of distinct words would
+			// otherwise keep every one.
+			if ( count( $this->resolved ) > 4096 ) {
+				$this->resolved = array();
+			}
+
+			foreach ( $this->resolved[ $key ] ??= $this->resolve( $word, $font, $primary ) as $piece ) {
+				$last = count( $pieces ) - 1;
+
+				if ( $last >= 0 && $pieces[ $last ][0] === $piece[0] ) {
+					$pieces[ $last ][1] .= $piece[1];
+					$pieces[ $last ][2]  = $pieces[ $last ][2] || $piece[2];
+				} else {
+					$pieces[] = $piece;
+				}
+			}
+		}
+
+		return $pieces;
+	}
+
+	/**
+	 * Which fonts draw one word.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string        $word    One word, or one space.
+	 * @param Font          $font    Role.
+	 * @param TrueType|null $primary The family's face for the role.
+	 *
+	 * @return list<array{0: TrueType|null, 1: string, 2: bool}>
+	 */
+	private function resolve( string $word, Font $font, ?TrueType $primary ): array {
+		$characters = mb_str_split( $word, 1, 'UTF-8' );
+		$codes      = array_map( static fn( string $character ): int => mb_ord( $character, 'UTF-8' ), $characters );
+		$refused    = array_filter( $codes, self::refused( ... ) );
+
+		if ( null !== $primary && array() === $refused && $primary->covers( $word ) ) {
+			return array( array( $primary, $word, false ) );
+		}
+
+		$exact = array_filter( $codes, self::lossless( ... ) );
+
+		if ( count( $exact ) === count( $codes ) ) {
+			return array( array( null, $word, false ) );
+		}
+
+		$fallback = $this->fallback_face( $font );
+
+		if ( null !== $fallback && array() === $refused && $fallback->covers( $word ) ) {
+			return array( array( $fallback, $word, false ) );
+		}
+
+		$pieces = array();
+
+		foreach ( $characters as $index => $character ) {
+			$code = $codes[ $index ];
+
+			$piece = match ( true ) {
+				isset( $refused[ $index ] )                               => array( null, $character, true ),
+				null !== $primary && 0 !== $primary->glyph( $code )       => array( $primary, $character, false ),
+				isset( $exact[ $index ] )                                 => array( null, $character, false ),
+				null !== $fallback && 0 !== $fallback->glyph( $code )     => array( $fallback, $character, false ),
+				default                                                   => array( null, $character, true ),
+			};
+
+			$last = count( $pieces ) - 1;
+
+			if ( $last >= 0 && $pieces[ $last ][0] === $piece[0] ) {
+				$pieces[ $last ][1] .= $character;
+				$pieces[ $last ][2]  = $pieces[ $last ][2] || $piece[2];
+			} else {
+				$pieces[] = $piece;
+			}
+		}
+
+		return $pieces;
+	}
+
+	/**
+	 * Each character of a text with the width it will be drawn at.
+	 *
+	 * Measured in the face its word resolves to, so cutting a word or
+	 * shortening a value to fit agrees with how the line is drawn.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $text Text.
+	 * @param Font   $font Role.
+	 * @param float  $size Font size.
+	 *
+	 * @return \Generator<int, array{0: string, 1: float}> One at a time: a
+	 *         value of half a megabyte is half a million of them.
+	 */
+	private function advances( string $text, Font $font, float $size ): \Generator {
+		$known = array();
+
+		foreach ( $this->pieces( $text, $font ) as [ $face, $piece ] ) {
+			$id = null === $face ? 0 : spl_object_id( $face );
+
+			foreach ( self::characters( $piece ) as $character ) {
+				yield array(
+					$character,
+					$known[ $id ][ $character ] ??= null === $face ? $font->width_of( self::winansi( $character ), $size ) : $face->width_of( $character, $size ),
+				);
+			}
+		}
+	}
+
+	/**
+	 * The fallback family's face for a role, its regular when it has none.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param Font $font Role.
+	 *
+	 * @return TrueType|null
+	 */
+	private function fallback_face( Font $font ): ?TrueType {
+		if ( ! $this->fallback_chosen ) {
+			$this->fallback_chosen = true;
+
+			// The bundled family is read the first time a word needs it, so
+			// a document in English never opens the font files.
+			try {
+				$this->fallback = FontFamily::noto_sans();
+			} catch ( \InvalidArgumentException ) {
+				$this->fallback = null;
+			}
+		}
+
+		return null === $this->fallback ? null : $this->fallback->face( $font ) ?? $this->fallback->regular;
+	}
+
+	/**
+	 * The resource name a font is shown under, registered on first use.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param Font|TrueType $font A base font, or an embedded face.
 	 *
 	 * @return string
 	 */
-	private static function font_resource( Font $font ): string {
-		return match ( $font ) {
-			Font::Helvetica     => 'F1',
-			Font::HelveticaBold => 'F2',
-			Font::Courier       => 'F3',
-		};
+	private function resource( Font|TrueType $font ): string {
+		if ( $font instanceof Font ) {
+			$this->resources[ $font->resource() ] ??= $font;
+
+			return $font->resource();
+		}
+
+		$id = spl_object_id( $font );
+
+		if ( ! isset( $this->subsets[ $id ] ) ) {
+			$this->subsets[ $id ]                                     = new FontSubset( $font );
+			$this->resources[ 'E' . count( $this->subsets ) ] = $id;
+		}
+
+		return (string) array_search( $id, $this->resources, true );
+	}
+
+	/**
+	 * Whether Windows-1252 holds a character as itself.
+	 *
+	 * ASCII, Latin-1, the euro and its other additions — and the spaces,
+	 * dashes and primes with a stand-in that looks the same. A letter that
+	 * would lose its accent or turn into a different letter does not count.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $code Code point.
+	 *
+	 * @return bool
+	 */
+	private static function lossless( int $code ): bool {
+		return $code < 0x80
+			|| ( $code >= 0xA0 && $code <= 0xFF )
+			|| isset( self::WINDOWS_1252[ $code ] )
+			|| ( $code >= 0x2000 && isset( self::STAND_INS[ $code ] ) );
+	}
+
+	/**
+	 * Whether a character belongs to a script this cannot lay out.
+	 *
+	 * Right-to-left scripts need reordering and Arabic letters change form
+	 * by position; the Indic, Khmer and Myanmar scripts reorder and stack
+	 * their vowels. Drawn a code point at a time, left to right, any of
+	 * them comes out wrong in a way a reader who does not know the script
+	 * could not tell — so they are refused, printed as `?` and reported.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $code Code point.
+	 *
+	 * @return bool
+	 */
+	private static function refused( int $code ): bool {
+		return ( $code >= 0x0590 && $code <= 0x08FF )    // Hebrew, Arabic, Syriac, Thaana, N'Ko and the rest.
+			|| ( $code >= 0x0900 && $code <= 0x0DFF )     // Devanagari to Sinhala.
+			|| ( $code >= 0x1000 && $code <= 0x109F )     // Myanmar.
+			|| ( $code >= 0x1780 && $code <= 0x17FF )     // Khmer.
+			|| ( $code >= 0xFB1D && $code <= 0xFDFF )     // Hebrew and Arabic presentation forms.
+			|| ( $code >= 0xFE70 && $code <= 0xFEFE );    // Arabic presentation forms B.
+	}
+
+	/**
+	 * Text in composed form: `e` and a combining acute as one `é`.
+	 *
+	 * A font draws the composed letter with the accent where its designer
+	 * put it; the two separate glyphs only line up with the positioning
+	 * tables this does not read, and Windows-1252 has no combining accent
+	 * at all.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $text Valid UTF-8.
+	 *
+	 * @return string
+	 */
+	private static function composed( string $text ): string {
+		if ( ! class_exists( \Normalizer::class ) || 1 !== preg_match( '/[\x80-\xFF]/', $text ) ) {
+			return $text;
+		}
+
+		$composed = \Normalizer::normalize( $text, \Normalizer::FORM_C );
+
+		return is_string( $composed ) ? $composed : $text;
 	}
 
 	/**

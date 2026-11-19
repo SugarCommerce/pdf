@@ -19,6 +19,7 @@ use SugarCommerce\Pdf\Color;
 use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\Font;
 use SugarCommerce\Pdf\Svg;
+use SugarCommerce\Pdf\Tests\Support\Reader;
 
 /**
  * An invoice is built from customer-supplied names, addresses and product
@@ -38,7 +39,7 @@ final class PdfSecurityTest extends TestCase {
 		$pdf = new Document();
 		$pdf->text( $hostile );
 
-		$rendered = $pdf->render();
+		$rendered = Reader::plain( $pdf->render() );
 
 		// Every parenthesis in the stream is either escaped or one of the
 		// delimiters the writer emitted itself.
@@ -67,7 +68,7 @@ final class PdfSecurityTest extends TestCase {
 		$pdf = new Document();
 		$pdf->text( 'a) Tj 1 0 0 rg (injected' );
 
-		preg_match_all( '/\((?:\\\\.|[^()\\\\])*\)\s*Tj/', $pdf->render(), $matches );
+		preg_match_all( '/\((?:\\\\.|[^()\\\\])*\)\s*Tj/', Reader::plain( $pdf->render() ), $matches );
 
 		$this->assertCount( 1, $matches[0] );
 		$this->assertSame( '(a\) Tj 1 0 0 rg \(injected) Tj', $matches[0][0] );
@@ -204,7 +205,7 @@ final class PdfSecurityTest extends TestCase {
 	}
 
 	public function test_wrapping_never_splits_a_character(): void {
-		$rendered = ( new Document() )->text( str_repeat( 'Ü', 300 ) )->render();
+		$rendered = Reader::plain( ( new Document() )->text( str_repeat( 'Ü', 300 ) )->render() );
 
 		$this->assertStringNotContainsString( '?', $rendered );
 		$this->assertGreaterThan( 1, substr_count( $rendered, ') Tj' ) );
@@ -217,7 +218,7 @@ final class PdfSecurityTest extends TestCase {
 		$pdf = new Document();
 		$pdf->text( str_repeat( 'W', 400 ) );
 
-		preg_match_all( '/\((W+)\) Tj/', $pdf->render(), $matches );
+		preg_match_all( '/\((W+)\) Tj/', Reader::plain( $pdf->render() ), $matches );
 
 		$this->assertNotEmpty( $matches[1] );
 
@@ -236,7 +237,7 @@ final class PdfSecurityTest extends TestCase {
 
 		$expected = 100 + 200 - Font::Helvetica->width_of( '(5.00)', 10 );
 
-		$this->assertStringContainsString( sprintf( '%.2F 500.00 Td', $expected ), $pdf->render() );
+		$this->assertStringContainsString( sprintf( '%.2F 500.00 Td', $expected ), Reader::plain( $pdf->render() ) );
 	}
 
 		/* ─── Numbers ───────────────────────────────────────────────────── */

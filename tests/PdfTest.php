@@ -19,6 +19,7 @@ namespace SugarCommerce\Pdf\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize, Svg, Table};
+use SugarCommerce\Pdf\Tests\Support\Reader;
 use SugarCommerce\Pdf\Templates\{Branding, Invoice, Language, LineItem, Party, Receipt, Statement, Translations, VatLine, VatTreatment};
 
 final class PdfTest extends TestCase {
@@ -33,12 +34,49 @@ final class PdfTest extends TestCase {
 	}
 
 	public function test_required_objects_are_present(): void {
-		$pdf = ( new Document() )->text( 'Hello' )->render();
+		$pdf = ( new Document() )->text( 'Hello' )->text( 'Bold', null, Font::HelveticaBold )->text( 'Code', null, Font::Courier )->render();
 
-		foreach ( array( '/Type /Catalog', '/Type /Pages', '/Type /Page ', '/BaseFont /Helvetica',
-			'/BaseFont /Helvetica-Bold', '/BaseFont /Courier', '/WinAnsiEncoding', 'trailer', 'startxref' ) as $needle ) {
+		foreach ( array( '/Type /Catalog', '/Type /Pages', '/Type /Page ', '/BaseFont /Helvetica ',
+			'/BaseFont /Helvetica-Bold ', '/BaseFont /Courier ', '/WinAnsiEncoding', 'trailer', 'startxref' ) as $needle ) {
 			$this->assertStringContainsString( $needle, $pdf, $needle );
 		}
+	}
+
+	/**
+	 * A font is written when something is set in it, and only then.
+	 */
+	public function test_only_the_fonts_used_are_written(): void {
+		$pdf = ( new Document() )->text( 'Hello' )->render();
+
+		$this->assertStringContainsString( '/F1 4 0 R', $pdf );
+		$this->assertStringNotContainsString( '/BaseFont /Helvetica-Bold', $pdf );
+		$this->assertStringNotContainsString( '/BaseFont /Courier', $pdf );
+		$this->assertStringContainsString( '/Font <<>>', ( new Document() )->rect( 0, 0, 10, 10 )->render() );
+	}
+
+	/**
+	 * The widths are published, so a reader advances each character by
+	 * what it was measured at — the euro included, which readers' own
+	 * Helvetica tables predate.
+	 */
+	public function test_base_fonts_publish_their_widths(): void {
+		$pdf = ( new Document() )->text( '€' )->render();
+
+		$this->assertMatchesRegularExpression( '/\/BaseFont \/Helvetica \/Encoding \/WinAnsiEncoding \/FirstChar 32 \/LastChar 255 \/Widths \[278 278 355 [\d ]+\]/', $pdf );
+		$this->assertSame( 744, Font::Helvetica->widths()[0x80] );
+		$this->assertSame( 600, Font::Courier->widths()[0x80] );
+		$this->assertSame( Font::Helvetica->widths(), Font::HelveticaOblique->widths() );
+	}
+
+	/**
+	 * Content streams are deflated, and inflate back to the operators.
+	 */
+	public function test_content_streams_are_compressed(): void {
+		$pdf = ( new Document() )->text( str_repeat( 'Compressible text. ', 50 ) )->render();
+
+		$this->assertStringContainsString( '/Filter /FlateDecode', $pdf );
+		$this->assertStringNotContainsString( 'Compressible text.', $pdf );
+		$this->assertStringContainsString( '(Compressible text.', Reader::plain( $pdf ) );
 	}
 
 	/**
@@ -190,7 +228,7 @@ final class PdfTest extends TestCase {
 	/* ─── Text handling ─────────────────────────────────────────────── */
 
 	public function test_content_appears_in_the_stream(): void {
-		$this->assertStringContainsString( '(Hello world) Tj', ( new Document() )->text( 'Hello world' )->render() );
+		$this->assertStringContainsString( '(Hello world) Tj', Reader::plain( ( new Document() )->text( 'Hello world' )->render() ) );
 	}
 
 	#[DataProvider( 'escaping' )]
@@ -232,11 +270,11 @@ final class PdfTest extends TestCase {
 	}
 
 	public function test_long_lines_wrap_to_the_content_width(): void {
-		$this->assertGreaterThan( 1, substr_count( ( new Document() )->text( str_repeat( 'word ', 100 ) )->render(), ') Tj' ) );
+		$this->assertGreaterThan( 1, substr_count( Reader::plain( ( new Document() )->text( str_repeat( 'word ', 100 ) )->render() ), ') Tj' ) );
 	}
 
 	public function test_unbroken_strings_are_cut(): void {
-		$this->assertGreaterThan( 1, substr_count( ( new Document() )->text( str_repeat( 'a', 400 ) )->render(), ') Tj' ) );
+		$this->assertGreaterThan( 1, substr_count( Reader::plain( ( new Document() )->text( str_repeat( 'a', 400 ) )->render() ), ') Tj' ) );
 	}
 
 	/* ─── Pagination ────────────────────────────────────────────────── */
@@ -284,7 +322,7 @@ final class PdfTest extends TestCase {
 			$d->text_at( "Page {$page} of {$total}", $d->left(), 30, 8 );
 		} );
 
-		$pdf   = $doc->render();
+		$pdf   = Reader::plain( $doc->render() );
 		$total = substr_count( $pdf, '/Type /Page ' );
 
 		$this->assertGreaterThan( 1, $total );
@@ -306,7 +344,7 @@ final class PdfTest extends TestCase {
 			->rows( array( array( 'Drum Kit', '£149.00' ) ) )
 			->draw( $doc );
 
-		$pdf = $doc->render();
+		$pdf = Reader::plain( $doc->render() );
 
 		$this->assertStringContainsString( '(Description) Tj', $pdf );
 		$this->assertStringContainsString( '(Drum Kit) Tj', $pdf );
@@ -343,7 +381,7 @@ final class PdfTest extends TestCase {
 
 			( new Table( array( 'A', 'B' ) ) )->widths( array( 0.5, 0.5 ) )->rows( array( array( 'x', 'y' ) ) )->draw( $doc );
 
-			$this->assertStringContainsString( '(x) Tj', $doc->render() );
+			$this->assertStringContainsString( '(x) Tj', Reader::plain( $doc->render() ) );
 		}
 	}
 
@@ -418,7 +456,7 @@ final class PdfTest extends TestCase {
 	}
 
 	public function test_a_logo_reaches_the_page(): void {
-		$pdf = ( new Document() )->svg_path( 'M0,0 L50,0 L50,50 Z', 100, 700, 1.0, Color::hex( '#336699' ), 50 )->render();
+		$pdf = Reader::plain( ( new Document() )->svg_path( 'M0,0 L50,0 L50,50 Z', 100, 700, 1.0, Color::hex( '#336699' ), 50 )->render() );
 
 		// Positioned, filled with the requested colour, and closed.
 		$this->assertStringContainsString( '1 0 0 1 100.00 700.00 cm', $pdf );
@@ -466,9 +504,10 @@ final class PdfTest extends TestCase {
 	}
 
 	public function test_the_invoice_template_renders(): void {
-		$pdf = $this->invoice()->render()->render();
+		$bytes = $this->invoice()->render()->render();
+		$pdf   = Reader::plain( $bytes );
 
-		$this->assertStringStartsWith( '%PDF', $pdf );
+		$this->assertStringStartsWith( '%PDF', $bytes );
 		$this->assertStringContainsString( '(INVOICE) Tj', $pdf );
 		$this->assertStringContainsString( '(Acme Ltd) Tj', $pdf );
 		$this->assertStringContainsString( '(Drum Kit) Tj', $pdf );
@@ -488,12 +527,12 @@ final class PdfTest extends TestCase {
 	 * invoice date, and the one most often left off.
 	 */
 	public function test_the_supply_date_is_printed(): void {
-		$this->assertStringContainsString( '(Date of supply) Tj', $this->invoice()->render()->render() );
+		$this->assertStringContainsString( '(Date of supply) Tj', Reader::plain( $this->invoice()->render()->render() ) );
 	}
 
 	#[DataProvider( 'vat_treatments' )]
 	public function test_vat_wording_is_printed( VatTreatment $vat, string $expected ): void {
-		$pdf = $this->invoice( $vat, 'DE811' )->render()->render();
+		$pdf = Reader::plain( $this->invoice( $vat, 'DE811' )->render()->render() );
 
 		$this->assertStringContainsString( $expected, $pdf );
 	}
@@ -561,7 +600,7 @@ final class PdfTest extends TestCase {
 			supply_date: '1 July 2026',
 		);
 
-		$pdf = $invoice->render()->render();
+		$pdf = Reader::plain( $invoice->render()->render() );
 
 		$this->assertStringContainsString( '(VAT BREAKDOWN) Tj', $pdf );
 		$this->assertStringContainsString( '(Reduced \\(5%\\)) Tj', $pdf );
@@ -604,7 +643,7 @@ final class PdfTest extends TestCase {
 			total:    '£178.80',
 		);
 
-		$pdf = $receipt->render()->render();
+		$pdf = Reader::plain( $receipt->render()->render() );
 
 		$this->assertStringContainsString( '(RECEIPT) Tj', $pdf );
 		$this->assertStringContainsString( '(PAID IN FULL) Tj', $pdf );
@@ -682,7 +721,7 @@ final class PdfTest extends TestCase {
 			translator: Language::German,
 		);
 
-		$pdf = $german->render()->render();
+		$pdf = Reader::plain( $german->render()->render() );
 
 		$this->assertStringContainsString( '(RECHNUNG) Tj', $pdf );
 		$this->assertStringContainsString( '(Beschreibung) Tj', $pdf );
@@ -705,7 +744,7 @@ final class PdfTest extends TestCase {
 			translator: Language::German,
 		);
 
-		$this->assertStringContainsString( 'Steuerschuldnerschaft', $invoice->render()->render() );
+		$this->assertStringContainsString( 'Steuerschuldnerschaft', Reader::plain( $invoice->render()->render() ) );
 	}
 
 	public function test_statement_headers_follow_the_language(): void {
@@ -717,7 +756,7 @@ final class PdfTest extends TestCase {
 			translator: Language::German,
 		);
 
-		$pdf = $statement->render()->render();
+		$pdf = Reader::plain( $statement->render()->render() );
 
 		$this->assertStringContainsString( '(KONTOAUSZUG) Tj', $pdf );
 		$this->assertStringContainsString( '(Datum) Tj', $pdf );
@@ -745,7 +784,7 @@ final class PdfTest extends TestCase {
 			translator: $translator,
 		);
 
-		$this->assertStringContainsString( '(invoice) Tj', $invoice->render()->render() );
+		$this->assertStringContainsString( '(invoice) Tj', Reader::plain( $invoice->render()->render() ) );
 	}
 
 	public function test_a_translator_returning_nothing_falls_back(): void {
@@ -777,7 +816,7 @@ final class PdfTest extends TestCase {
 			aligns:   array(),
 		);
 
-		$this->assertStringContainsString( '(Custom A) Tj', $statement->render()->render() );
+		$this->assertStringContainsString( '(Custom A) Tj', Reader::plain( $statement->render()->render() ) );
 	}
 
 	/* ─── Saving ────────────────────────────────────────────────────── */
@@ -808,8 +847,6 @@ final class PdfTest extends TestCase {
 	 * @return string[]
 	 */
 	private static function streams( string $pdf ): array {
-		preg_match_all( '/stream\n(.*?)\nendstream/s', $pdf, $m );
-
-		return $m[1];
+		return Reader::streams( $pdf );
 	}
 }

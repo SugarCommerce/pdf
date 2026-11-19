@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\Templates\PaymentCode;
+use SugarCommerce\Pdf\Tests\Support\Reader;
 use SugarCommerce\Qr\QR;
 
 final class PaymentCodeTest extends TestCase {
@@ -92,7 +93,7 @@ final class PaymentCodeTest extends TestCase {
 		$module = 116 / ( $count + 8 );
 		$drawn  = array_fill( 0, $count, array_fill( 0, $count, false ) );
 
-		preg_match_all( '/(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+) re/', $pdf->render( array( 'CreationDate' => 0 ) ), $rects, PREG_SET_ORDER );
+		preg_match_all( '/(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+) re/', Reader::plain( $pdf->render( array( 'CreationDate' => 0 ) ) ), $rects, PREG_SET_ORDER );
 
 		foreach ( $rects as [ , $x, $y, $w, $h ] ) {
 			$this->assertEqualsWithDelta( $module, (float) $h, 0.001 );
@@ -118,6 +119,6 @@ final class PaymentCodeTest extends TestCase {
 		$this->assertFalse( $pdf->qr( str_repeat( 'x', 3000 ), 0, 0, 90 ) );
 		$this->assertFalse( $pdf->qr( 'x', 0, 0, 90, level: 'Z' ) );
 		$this->assertFalse( $pdf->qr( 'x', 0, 0, 0 ) );
-		$this->assertStringNotContainsString( ' re', $pdf->render( array( 'CreationDate' => 0 ) ) );
+		$this->assertStringNotContainsString( ' re', Reader::plain( $pdf->render( array( 'CreationDate' => 0 ) ) ) );
 	}
 }

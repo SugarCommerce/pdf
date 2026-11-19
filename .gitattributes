@@ -20,6 +20,9 @@
 # Continuous integration
 /.github export-ignore
 
+# Maintainer scripts: bin/trim-font made the bundled fonts from upstream
+/bin export-ignore
+
 # Coding standards
 /phpcs.xml export-ignore
 /phpcs.xml.dist export-ignore
