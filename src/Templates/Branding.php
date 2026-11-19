@@ -140,7 +140,8 @@ final readonly class Branding {
 			array() !== $filled ? $from->address : $this->address,
 			$from->email,
 			$from->tax_id,
-			$from->registration
+			$from->registration,
+			$from->country
 		);
 	}
 

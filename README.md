@@ -36,6 +36,8 @@ and sends the download; outside it, it still works.
 * Put a customer's name anywhere without it breaking out of the document
 * Print names and addresses in Polish, Czech, Turkish, Greek, Ukrainian or any other European alphabet — the bundled Noto Sans draws what Helvetica cannot, and only the letters used are embedded
 * Set every document in your brand's typeface from its `.ttf` files, with copy and search working on the page
+* Send a Factur-X / ZUGFeRD e-invoice — a PDF/A-3b a person reads, carrying the EN 16931 XML a buyer's system books — from the same figures as the page, refused rather than written when a validator would reject it
+* Write any document as PDF/A-3b for archiving, with files attached to it
 
 ## Installation
 
@@ -429,6 +431,111 @@ foreach ( $pdf->image_warnings() as $warning ) { // footers included
 `load_image( $path )` reads a picture the same way — an `Image`, or null and a
 warning — for laying out around it before drawing.
 
+## E-invoices: Factur-X and ZUGFeRD
+
+Germany's B2B e-invoicing mandate is phasing in and France's follows; both
+want an invoice a system can read without looking at the picture. Factur-X —
+ZUGFeRD 2 in Germany, the same specification — is one PDF/A-3 file carrying
+the invoice as Cross Industry Invoice XML: the page for the person, the XML
+for the ledger. Make the invoice from a `Totals`, as usual, and give the same
+`Totals` to a `FacturX` with the dates the XML states:
+
+```php
+use SugarCommerce\Pdf\Templates\{FacturX, FacturXProfile, Invoice, Party, Totals, TotalsLine};
+
+$totals  = new Totals( [ new TotalsLine( 'Drum Kit Vol. 2 — studio licence', 14900 ) ], 'EUR', 23 );
+$invoice = new Invoice(
+	branding: $brand,
+	number:   'INV-2026-0060',
+	from:     new Party( 'Northwind Audio Ltd', [ '12 Example Street', 'Dublin 2' ], tax_id: 'IE1234567X', country: 'IE' ),
+	to:       new Party( 'Klangwerk GmbH', [ 'Torstraße 109', '10119 Berlin' ], tax_id: 'DE811907980', country: 'DE' ),
+	items:    $totals->items(),
+	totals:   $totals->rows(),
+	total:    $totals->total(),
+);
+
+$details = new FacturX(
+	$totals,
+	issued:  new DateTimeImmutable( '2026-11-18' ),
+	profile: FacturXProfile::En16931,                   // the default
+	due:     new DateTimeImmutable( '2026-12-18' ),      // or payment_terms: 'Within 30 days'
+);
+
+$problems = $invoice->factur_x_problems( $details );   // [] when it can be sent; each names its EN 16931 rule
+$invoice->factur_x( $details )->save( 'INV-2026-0060.pdf', $invoice->metadata() );
+$xml = $invoice->factur_x_xml( $details );             // the XML alone, for a portal that wants only that
+```
+
+`factur_x()` renders the invoice as PDF/A-3b and attaches `factur-x.xml`, with
+the Factur-X extension schema in the XMP packet. It throws a
+`FacturXException` listing every problem at once — rather than writing a file
+the buyer's validator rejects days later — when the document is not an invoice
+(a quote, a delivery note), when a particular the standard requires is missing
+(the seller's VAT number and country, the buyer's country, the buyer's VAT
+number under reverse charge, the delivery date and country of an
+intra-community supply, a due date or terms when something is payable), when
+the currency has three decimals (EN 16931 allows two), when VAT is charged
+under a treatment that charges none, when the page's total or its lines are
+not the ones the figures make, and when the page could not print a name as
+written.
+
+**Profiles.** The four a `Totals` can fill — the Swift `swift-invoice-pdf`
+this ports writes the first two:
+
+| Profile | Carries | Attached as |
+|---|---|---|
+| `Minimum` | header, parties, totals | `Data` |
+| `BasicWl` | the same, with the VAT breakdown, discounts, payment terms and the buyer's address | `Data` |
+| `Basic` | every line as well | `Alternative` |
+| `En16931` | every line: what the German and French B2B mandates mean by an e-invoice | `Alternative` |
+
+**From the same figures.** Each line's price, quantity, rate and note; one VAT
+breakdown per rate, with the reason and VATEX code for reverse charge (`AE`),
+intra-community supply (`K`), export (`G`) and exempt or small-business (`E`)
+and `Z` for a standard-rated invoice's zero rate; each discount as an
+allowance per rate, the same shares `Totals` took off; a credit note's
+original invoice; a self-billed invoice's parties the right way round; dates
+in the issuer's own time zone. `Party::$country` — a two-letter code, not
+printed — is the one new field: the standard requires it, and reading it out
+of an address guesses.
+
+**Validated.** CI runs the UN/CEFACT CII D16B schema and the Factur-X
+Schematron of each profile over 180 documents — every profile, VAT treatment
+and kind — and veraPDF over every e-invoice. `bin/validators` fetches them
+into `.validator/` (gitignored; pinned versions, nothing committed), and
+`bin/validate-facturx.py` runs the schema and Schematron on any XML.
+
+## PDF/A-3b
+
+Any document can be written for archiving:
+
+```php
+use SugarCommerce\Pdf\{Attachment, Document, Relationship};
+
+$pdf = ( new Document() )->archival(); // before drawing anything
+$pdf->attach( new Attachment( 'order.json', $json, 'application/json', 'The order', Relationship::Source ) );
+
+$invoice->render( archival: true ); // the templates take it too
+```
+
+An archival document embeds every font: the base-14 fonts cannot be, so text
+is set in the document's family, or the bundled Noto Sans when it has none —
+monospaced text too — and what no font in reach can print is a `?` in that
+family, listed by `substitutions()`, never the `.notdef` glyph. It carries an
+XMP packet that declares PDF/A-3 part B and agrees with the information
+dictionary field for field and to the second, an sRGB output intent, a file
+identifier made from the content, a `%PDF-1.7` header, and each attached file
+as an associated file with its relationship. A CMYK JPEG cannot be drawn under
+an sRGB output intent: `image()` refuses it and says so in
+`image_warnings()` — save it as RGB. The text a reader extracts is the same
+as from the ordinary document; Noto Sans is wider than Helvetica, so lines can
+break in other places.
+
+The sRGB profile is `sRGB-v2-micro.icc` from Clinton Ingram's
+[Compact-ICC-Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles):
+456 bytes, released under CC0 1.0 (`icc/LICENSE.txt`), so it carries no
+condition at all.
+
 ## A document of your own
 
 ```php
@@ -523,13 +630,28 @@ order — format 4 and 12 maps, short and long `loca`, composites of composites
 with every transform size, damaged and hostile files — and against the bundled
 Noto Sans.
 
+PDF/A and Factur-X are marked by the reference validators. `bin/validators`
+fetches veraPDF and the CII schema and Factur-X Schematron (CI does this before
+the tests); veraPDF then passes every golden document, made archival, and four
+golden e-invoices — one per profile, kept as PDF, XML and text — as PDF/A-3b,
+and the schema and Schematron pass the XML of every profile, VAT treatment and
+kind. Each archival fixture also has to read back as the same text as the
+ordinary one, with only embedded subsets in `pdffonts`. Every rule on its own —
+the XMP fields, the output intent, the attachment's relationship, each refusal,
+each figure — has a test that names it, and those were mutation-checked.
+
+```bash
+bin/validators            # veraPDF (needs java) and the XML validators (needs python3, xmllint)
+composer test             # then runs them too
+```
+
 ## What it does not do
 
 * No GIF, WebP, HEIC or TIFF, and no SVG files — PNG and JPEG, plus SVG path data (see [Logos and pictures](#logos-and-pictures))
 * No right-to-left or shaped scripts — Arabic, Hebrew, the Indic scripts — and no kerning or ligatures (see [Fonts](#fonts)); mPDF does those
-* No PDF/A or Factur-X / ZUGFeRD e-invoices yet
+* No Factur-X Extended or XRechnung profiles, and no PDF/A levels but 3b — no tagged PDF, so not PDF/A-3a or PDF/UA
 * No HTML or CSS
-* No forms, encryption or signatures, and no reading existing PDFs
+* No forms, encryption or signatures, and no reading existing PDFs — so no turning someone else's PDF into an e-invoice
 
 For those, use a full library. This one is for documents you generate.
 

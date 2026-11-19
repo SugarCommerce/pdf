@@ -164,6 +164,77 @@ final class GoldenTest extends TestCase {
 		$this->assertStringContainsString( 'Šťastný nový rok', Reader::text( $typeface ) );
 	}
 
+	/* ─── Archival and e-invoices ───────────────────────────────────── */
+
+	/** @return array<string, array{0: string}> */
+	public static function einvoices(): array {
+		$names = array();
+
+		foreach ( array_keys( Fixtures::einvoices() ) as $name ) {
+			$names[ $name ] = array( $name );
+		}
+
+		return $names;
+	}
+
+	#[DataProvider( 'einvoices' )]
+	public function test_the_einvoice_is_its_golden_file( string $name ): void {
+		$bytes = Fixtures::einvoice_bytes( Fixtures::einvoices()[ $name ] );
+
+		$this->assertSame( Reader::canonical( $this->golden( $name . '.pdf', $bytes ) ), Reader::canonical( $bytes ), 'Run UPDATE_GOLDEN=1 composer test after a deliberate change.' );
+		$this->assertSame( $bytes, Fixtures::einvoice_bytes( Fixtures::einvoices()[ $name ] ) );
+	}
+
+	#[DataProvider( 'einvoices' )]
+	public function test_the_einvoice_xml_is_its_golden_file( string $name ): void {
+		[ $invoice, $details ] = Fixtures::einvoices()[ $name ];
+
+		$xml = $invoice->factur_x_xml( $details );
+
+		$this->assertSame( $this->golden( $name . '.xml', $xml ), $xml, 'Run UPDATE_GOLDEN=1 composer test after a deliberate change.' );
+	}
+
+	#[DataProvider( 'einvoices' )]
+	public function test_poppler_reads_the_einvoice_golden_text( string $name ): void {
+		[ $code, $text ] = Reader::run( Reader::tool( 'pdftotext' ), array( '-layout', '-enc', 'UTF-8' ), Fixtures::einvoice_bytes( Fixtures::einvoices()[ $name ] ), array( '-' ) );
+
+		$this->assertSame( 0, $code, $text );
+
+		$text = self::normalised( $text );
+
+		$this->assertSame( $this->golden( $name . '.txt', $text ), $text, 'Run UPDATE_GOLDEN=1 composer test after a deliberate change.' );
+	}
+
+	/**
+	 * Every fixture as PDF/A: qpdf finds nothing wrong, every font is an
+	 * embedded subset — no base font left for a reader to supply — and a
+	 * reader extracts the same text in the same order as from the ordinary
+	 * file. The family is wider than Helvetica, so lines may break in other
+	 * places; the words do not change.
+	 */
+	#[DataProvider( 'fixtures' )]
+	public function test_the_archival_file_has_only_embedded_fonts_and_the_same_text( string $name ): void {
+		$template = Fixtures::all()[ $name ];
+		$archival = Fixtures::bytes( $template, true );
+
+		[ $code, $output ] = Reader::run( Reader::tool( 'qpdf' ), array( '--check' ), $archival );
+
+		$this->assertSame( 0, $code, $output );
+
+		[ $code, $fonts ] = Reader::run( Reader::tool( 'pdffonts' ), array(), $archival );
+
+		$this->assertSame( 0, $code, $fonts );
+
+		foreach ( array_slice( explode( "\n", trim( $fonts ) ), 2 ) as $row ) {
+			$this->assertMatchesRegularExpression( '/^[A-Z]{6}\+NotoSans-(Regular|Bold)\s+CID TrueType\s+Identity-H\s+yes\s+yes\s+yes\s/', $row );
+		}
+
+		$read = static fn( string $bytes ): string => Reader::squeezed( Reader::run( Reader::tool( 'pdftotext' ), array( '-raw', '-enc', 'UTF-8' ), $bytes, array( '-' ) )[1] );
+
+		$this->assertSame( $read( Fixtures::bytes( $template ) ), $read( $archival ) );
+		$this->assertSame( Fixtures::document( $template )->substitutions(), $template->render( true )->substitutions() );
+	}
+
 	/**
 	 * pdftotext's layout as compared: spacing collapsed, blank lines
 	 * dropped. Two poppler releases disagree about how many spaces a

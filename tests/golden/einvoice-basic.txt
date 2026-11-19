@@ -1,0 +1,22 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0061
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Wytwórnia Dźwięku Łódź Issued 18 November 2026
+12 Example Street Sp. z o.o. Due 18 December 2026
+Dublin 2, D02 X285 ul. Piotrkowska 104 Date of supply 17 November 2026
+Ireland 90-006 Łódź
+accounts@northwind.example Polska
+VAT IE1234567X VAT PL7251234567
+Company no. 654321
+Description Qty Unit price Amount
+Mixing and mastering, 12 tracks 1 €1,240.00 €1,240.00
+VAT BREAKDOWN
+Rate Net VAT
+0% €1,240.00 €0.00
+Subtotal €1,240.00
+Total due €1,240.00
+Reverse charge: VAT to be accounted for by the recipient.
+Article 196, Council Directive 2006/112/EC.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

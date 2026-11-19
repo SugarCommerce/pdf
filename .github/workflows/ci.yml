@@ -76,6 +76,18 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends $packages
 
+      # Reference validators a suite marks its output with -- for a PDF,
+      # veraPDF and the Factur-X schema and Schematron -- fetched by the
+      # package's own `validators` script, so a package that needs none
+      # fetches none. Java and Python come with the runner.
+      - name: Validators
+        run: |
+          if ! jq -e '.scripts["validators"]' composer.json > /dev/null; then
+            echo 'No validators script.'
+            exit 0
+          fi
+          composer validators
+
       # A suite built on wp-phpunit runs against real WordPress and a real
       # database: what it tests is what MySQL actually does.
       - name: WordPress test site

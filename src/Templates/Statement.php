@@ -112,10 +112,19 @@ final readonly class Statement {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @since 1.5.0 Archival, for PDF/A-3b.
+	 *
+	 * @param bool $archival Write it as PDF/A-3b: see {@see Document::archival()}.
+	 *
 	 * @return Document
 	 */
-	public function render(): Document {
+	public function render( bool $archival = false ): Document {
 		$pdf   = new Document( $this->size, $this->orientation, margin: 48, font_size: 9, leading: 12.5 );
+
+		if ( $archival ) {
+			$pdf->archival();
+		}
+
 		$brand = $this->branding;
 
 		$pdf->family( $brand->typeface );

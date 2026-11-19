@@ -1,6 +1,6 @@
 {
     "name": "sugarcommerce/pdf",
-    "description": "PDF invoices, receipts and statements with nothing to install: tables, vector logos, pages that break where they should, EU VAT wording and eleven languages, ready to save or send to the browser.",
+    "description": "PDF invoices, receipts and statements with nothing to install: tables, logos, any European alphabet, pages that break where they should, EU VAT wording in eleven languages, and Factur-X e-invoices on PDF/A-3.",
     "homepage": "https://github.com/SugarCommerce/pdf",
     "type": "library",
     "license": "GPL-2.0-or-later",
@@ -20,7 +20,11 @@
         "reverse-charge",
         "ecommerce",
         "truetype",
-        "unicode"
+        "unicode",
+        "pdf-a",
+        "factur-x",
+        "zugferd",
+        "e-invoice"
     ],
     "require": {
         "php": ">=8.3",
@@ -87,6 +91,7 @@
     "extra": {
         "ci": {
             "apt": [
+                "libxml2-utils",
                 "poppler-utils",
                 "qpdf"
             ]
@@ -96,7 +101,11 @@
         "test": "phpunit",
         "lint": "phpcs",
         "format": "phpcbf --standard=phpcs-format.xml.dist",
-        "format:check": "phpcs --standard=phpcs-format.xml.dist"
+        "format:check": "phpcs --standard=phpcs-format.xml.dist",
+        "validators": [
+            "Composer\\Config::disableProcessTimeout",
+            "bin/validators"
+        ]
     },
     "support": {
         "issues": "https://github.com/SugarCommerce/pdf/issues",

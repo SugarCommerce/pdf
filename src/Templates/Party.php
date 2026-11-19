@@ -31,6 +31,12 @@ final readonly class Party {
 	 * @param string   $registration Company registration number, where the
 	 *                               law of the seller's country wants it on
 	 *                               business documents (since 1.2.0).
+	 * @param string   $country Two-letter ISO 3166-1 country code, e.g. `IE`
+	 *                          (since 1.5.0). Not printed — write the country
+	 *                          in the address as the post expects it — but an
+	 *                          e-invoice must state it (EN 16931 BR-09), and
+	 *                          reading it back out of an address guesses:
+	 *                          "Sacramento, CA" is not in Canada.
 	 */
 	public function __construct(
 		public string $name,
@@ -38,6 +44,7 @@ final readonly class Party {
 		public string $email = '',
 		public string $tax_id = '',
 		public string $registration = '',
+		public string $country = '',
 	) {}
 
 	/**

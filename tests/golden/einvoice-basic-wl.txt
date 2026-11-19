@@ -1,0 +1,19 @@
+NORTHWIND AUDIO
+Sample packs and presets
+CREDIT NOTE
+CN-2026-0008
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Klangwerk GmbH Issued 19 November 2026
+12 Example Street Torstraße 109 Date of supply 17 November 2026
+Dublin 2, D02 X285 10119 Berlin Original invoice INV-2026-0060
+Ireland Germany
+accounts@northwind.example rechnung@klangwerk.example
+VAT IE1234567X VAT DE811907980
+Company no. 654321
+Description Qty Unit price Amount
+Vintage Keys — refund of one licence 1 €89.00 €89.00
+Subtotal €89.00
+VAT at 23% €20.47
+Total credited €109.47
+This credit note reverses the invoice referenced above. Retain both for your records.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

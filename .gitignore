@@ -5,3 +5,4 @@ phpunit.log
 .DS_Store
 .idea/
 /tests/.tmp/
+/.validator/

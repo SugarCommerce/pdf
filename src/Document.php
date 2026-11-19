@@ -168,6 +168,30 @@ final class Document {
 	private array $image_warnings = array();
 
 	/**
+	 * Whether the file is written as PDF/A-3b.
+	 */
+	private bool $archival = false;
+
+	/**
+	 * The family a PDF/A document is set in when none was chosen.
+	 */
+	private ?FontFamily $archival_family = null;
+
+	/**
+	 * Files carried inside the document, by name.
+	 *
+	 * @var array<string, Attachment>
+	 */
+	private array $attachments = array();
+
+	/**
+	 * Extra `rdf:Description` elements for the XMP packet.
+	 *
+	 * @var list<string>
+	 */
+	private array $xmp = array();
+
+	/**
 	 * Start an empty document with the cursor at the top margin.
 	 *
 	 * @since 1.0.0
@@ -368,6 +392,112 @@ final class Document {
 		return $this->family;
 	}
 
+	/* ─── Archiving ─────────────────────────────────────────────────── */
+
+	/**
+	 * Write the file as PDF/A-3b: archivable, and allowed to carry files.
+	 *
+	 * The level Factur-X and ZUGFeRD e-invoices are built on. What it
+	 * changes:
+	 *
+	 * - **Every font is embedded.** The base-14 fonts belong to the reader,
+	 *   so they cannot be used at all: text is set in the document's
+	 *   {@see family()}, or the bundled Noto Sans when it has none, and
+	 *   monospaced text in that family's regular face when it has no
+	 *   monospaced one. A character no font in reach has prints as `?` in
+	 *   the family and is listed by {@see substitutions()}, as before.
+	 * - **Colour is sRGB.** The file carries an sRGB output intent (a
+	 *   456-byte CC0 profile, `icc/`), and a CMYK JPEG cannot be drawn
+	 *   under it: {@see image()} refuses one and says so in
+	 *   {@see image_warnings()}. Convert it to RGB.
+	 * - **The file says what it is.** An XMP metadata packet that agrees
+	 *   with the information dictionary and declares PDF/A-3 part B, a
+	 *   file identifier made from the content, and a `%PDF-1.7` header.
+	 *   Every file {@see attach()}ed is listed as an associated file with
+	 *   its relationship.
+	 *
+	 * Set it before drawing anything: what is drawn is set in the fonts
+	 * the mode allows.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @return self
+	 *
+	 * @throws \LogicException When something has already been drawn.
+	 */
+	public function archival(): self {
+		if ( array() !== $this->pages || '' !== $this->current || array() !== $this->resources || array() !== $this->images ) {
+			throw new \LogicException( 'Make a document archival before drawing on it: what is already drawn may be set in fonts a PDF/A file cannot carry.' );
+		}
+
+		$this->archival = true;
+		$this->resolved = array();
+
+		return $this;
+	}
+
+	/**
+	 * Whether the file is written as PDF/A-3b.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @return bool
+	 */
+	public function is_archival(): bool {
+		return $this->archival;
+	}
+
+	/**
+	 * Carry a file inside the document.
+	 *
+	 * A reader lists it and offers to save it out. In a PDF/A-3 it is also
+	 * an associated file of the document, with its relationship — which
+	 * is how a Factur-X reader finds the invoice XML. A second file under
+	 * the same name replaces the first.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @param Attachment $file The file.
+	 *
+	 * @return self
+	 */
+	public function attach( Attachment $file ): self {
+		$this->attachments[ $file->name ] = $file;
+
+		return $this;
+	}
+
+	/**
+	 * The files the document carries, in the order attached.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @return list<Attachment>
+	 */
+	public function attachments(): array {
+		return array_values( $this->attachments );
+	}
+
+	/**
+	 * Add an `rdf:Description` to the XMP packet of a PDF/A file.
+	 *
+	 * PDF/A allows only the XMP properties a file declares a schema for,
+	 * so a description using a schema of its own must come with its
+	 * extension schema — Factur-X's `fx:` properties are the case in mind.
+	 * Written verbatim: it must be well-formed RDF/XML.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @param string $description One or more `rdf:Description` elements.
+	 *
+	 * @return self
+	 */
+	public function xmp( string $description ): self {
+		$this->xmp[] = $description;
+
+		return $this;
+	}
+
 	/**
 	 * Choose the family for words the base fonts cannot print.
 	 *
@@ -426,7 +556,7 @@ final class Document {
 	 */
 	public function ascender( ?float $size = null, Font $font = Font::Helvetica ): float {
 		$size ??= $this->font_size;
-		$face   = $this->family?->face( $font );
+		$face   = $this->primary( $font );
 
 		return null === $face ? $font->ascender( $size ) : $size * ( $face->cap_height + 63 ) / 1000;
 	}
@@ -443,7 +573,7 @@ final class Document {
 	 */
 	public function cap_height( ?float $size = null, Font $font = Font::Helvetica ): float {
 		$size ??= $this->font_size;
-		$face   = $this->family?->face( $font );
+		$face   = $this->primary( $font );
 
 		return null === $face ? $font->cap_height( $size ) : $size * $face->cap_height / 1000;
 	}
@@ -461,7 +591,7 @@ final class Document {
 	 */
 	public function descender( ?float $size = null, Font $font = Font::Helvetica ): float {
 		$size ??= $this->font_size;
-		$face   = $this->family?->face( $font );
+		$face   = $this->primary( $font );
 
 		return null === $face ? $font->descender( $size ) : $size * abs( $face->descender ) / 1000;
 	}
@@ -1322,7 +1452,8 @@ final class Document {
 	 *
 	 * For a template that needs the image's size before it draws: a path
 	 * that does not give an image returns null and is listed by
-	 * {@see image_warnings()}, so nothing goes missing unsaid.
+	 * {@see image_warnings()}, so nothing goes missing unsaid. So does a
+	 * CMYK JPEG in an {@see archival()} document (since 1.5.0).
 	 *
 	 * @since 1.4.0
 	 *
@@ -1331,17 +1462,27 @@ final class Document {
 	 * @return Image|null
 	 */
 	public function load_image( Image|string $image ): ?Image {
-		if ( $image instanceof Image ) {
-			return $image;
+		if ( ! $image instanceof Image ) {
+			try {
+				$image = Image::file( $image );
+			} catch ( \InvalidArgumentException $error ) {
+				$this->warn( $error->getMessage() );
+
+				return null;
+			}
 		}
 
-		try {
-			return Image::file( $image );
-		} catch ( \InvalidArgumentException $error ) {
-			$this->warn( $error->getMessage() );
+		// A PDF/A file's colour is sRGB, from its output intent, and a CMYK
+		// picture has no meaning under it. Refused rather than converted:
+		// turning ink into light needs the press's profile, which a writer
+		// does not have, and a guess shifts a brand colour.
+		if ( $this->archival && 'cmyk' === $image->color_space ) {
+			$this->warn( $image->name . ' is a CMYK JPEG, which a PDF/A file in sRGB cannot carry, and was not drawn. Save it as RGB.' );
 
 			return null;
 		}
+
+		return $image;
 	}
 
 	/**
@@ -1526,7 +1667,18 @@ final class Document {
 			$fonts[ $resource ] = $font instanceof Font ? $font : $this->subsets[ $font ];
 		}
 
-		return Writer::write( $stamped, $this->page_width, $this->page_height, $metadata, $this->language, $fonts, $this->images );
+		return Writer::write(
+			$stamped,
+			$this->page_width,
+			$this->page_height,
+			$metadata,
+			$this->language,
+			$fonts,
+			$this->images,
+			array_values( $this->attachments ),
+			$this->archival,
+			$this->xmp
+		);
 	}
 
 	/**
@@ -1746,10 +1898,16 @@ final class Document {
 	 */
 	private function pieces( string $text, Font $font ): array {
 		if ( ! mb_check_encoding( $text, 'UTF-8' ) ) {
-			return array( array( null, $text, 1 === preg_match( '/[\x80-\xFF]/', $text ) ) );
+			if ( ! $this->archival ) {
+				return array( array( null, $text, 1 === preg_match( '/[\x80-\xFF]/', $text ) ) );
+			}
+
+			// No base font to print the bytes as Windows-1252: what is not
+			// UTF-8 becomes `?`, which the family has.
+			$text = mb_scrub( $text, 'UTF-8' );
 		}
 
-		$primary = $this->family?->face( $font );
+		$primary = $this->primary( $font );
 
 		// Plain ASCII in the base fonts, which is most of every invoice.
 		if ( null === $primary && 1 !== preg_match( '/[\x80-\xFF]/', $text ) ) {
@@ -1803,9 +1961,10 @@ final class Document {
 			return array( array( $primary, $word, false ) );
 		}
 
-		$exact = array_filter( $codes, self::lossless( ... ) );
+		// A PDF/A file has no base fonts to fall back on.
+		$exact = $this->archival ? array() : array_filter( $codes, self::lossless( ... ) );
 
-		if ( count( $exact ) === count( $codes ) ) {
+		if ( ! $this->archival && count( $exact ) === count( $codes ) ) {
 			return array( array( null, $word, false ) );
 		}
 
@@ -1838,7 +1997,49 @@ final class Document {
 			}
 		}
 
-		return $pieces;
+		return null !== $primary && $this->archival ? self::stood_in( $pieces, $primary ) : $pieces;
+	}
+
+	/**
+	 * Pieces left to the base font, set in an embedded face instead.
+	 *
+	 * In a PDF/A file. Each is printed as the base font would have printed
+	 * it — a letter without its accent, a `?` — so a document reads the
+	 * same in either mode; whatever the face still lacks is a `?` too.
+	 * Never its `.notdef` glyph, which PDF/A forbids showing.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @param list<array{0: TrueType|null, 1: string, 2: bool}> $pieces From resolve().
+	 * @param TrueType                                          $face   The family's face for the role.
+	 *
+	 * @return list<array{0: TrueType|null, 1: string, 2: bool}> Every piece in an embedded face.
+	 */
+	private static function stood_in( array $pieces, TrueType $face ): array {
+		$result = array();
+
+		foreach ( $pieces as [ $owner, $piece, $replaced ] ) {
+			if ( null === $owner ) {
+				$printed = '';
+
+				foreach ( mb_str_split( (string) mb_convert_encoding( self::winansi( $piece ), 'UTF-8', 'Windows-1252' ), 1, 'UTF-8' ) as $character ) {
+					$printed .= 0 !== $face->glyph( mb_ord( $character, 'UTF-8' ) ) ? $character : ( 0 !== $face->glyph( 0x3F ) ? '?' : '' );
+				}
+
+				[ $owner, $piece, $replaced ] = array( $face, $printed, $replaced || $printed !== $piece );
+			}
+
+			$last = count( $result ) - 1;
+
+			if ( $last >= 0 && $result[ $last ][0] === $owner ) {
+				$result[ $last ][1] .= $piece;
+				$result[ $last ][2]  = $result[ $last ][2] || $replaced;
+			} else {
+				$result[] = array( $owner, $piece, $replaced );
+			}
+		}
+
+		return $result;
 	}
 
 	/**
@@ -1869,6 +2070,31 @@ final class Document {
 				);
 			}
 		}
+	}
+
+	/**
+	 * The face text in a role is set in first: the family's, or null for
+	 * the base font.
+	 *
+	 * In a PDF/A file there is always one — the family's face for the
+	 * role, its regular when it has none (monospaced text in a family
+	 * without a monospaced face), and the bundled Noto Sans when no family
+	 * was chosen — because the base fonts cannot be embedded.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @param Font $font Role.
+	 *
+	 * @return TrueType|null
+	 */
+	private function primary( Font $font ): ?TrueType {
+		if ( ! $this->archival ) {
+			return $this->family?->face( $font );
+		}
+
+		$family = $this->family ?? ( $this->archival_family ??= FontFamily::noto_sans() );
+
+		return $family->face( $font ) ?? $family->regular;
 	}
 
 	/**

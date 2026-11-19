@@ -1,0 +1,19 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0062
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Klangwerk GmbH Issued 18 November 2026
+12 Example Street Torstraße 109 Due 18 December 2026
+Dublin 2, D02 X285 10119 Berlin Date of supply 17 November 2026
+Ireland Germany
+accounts@northwind.example rechnung@klangwerk.example
+VAT IE1234567X VAT DE811907980
+Company no. 654321
+Description Qty Unit price Amount
+Field recorder 3 €499.00 €1,497.00
+Subtotal €1,497.00
+Total due €1,497.00
+Zero-rated intra-community supply.
+Article 138, Council Directive 2006/112/EC.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

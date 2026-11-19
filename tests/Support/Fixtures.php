@@ -15,7 +15,7 @@ namespace SugarCommerce\Pdf\Tests\Support;
 
 use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\FontFamily;
-use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, Invoice, Language, LineItem, Party, PaymentCode, Receipt, Statement, Totals, TotalsLine, VatLine, VatTreatment};
+use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, FacturX, FacturXProfile, Invoice, Language, LineItem, Party, PaymentCode, Receipt, Statement, Totals, TotalsLine, VatLine, VatTreatment};
 
 /**
  * Class Fixtures
@@ -55,13 +55,14 @@ final class Fixtures {
 	 * A fixture's bytes, the same on every run.
 	 *
 	 * @param Invoice|Receipt|Statement $template Fixture.
+	 * @param bool                      $archival As PDF/A-3b.
 	 *
 	 * @return string
 	 */
-	public static function bytes( Invoice|Receipt|Statement $template ): string {
+	public static function bytes( Invoice|Receipt|Statement $template, bool $archival = false ): string {
 		$metadata = $template instanceof Invoice ? $template->metadata() : array();
 
-		return $template->render()->render( $metadata + array( 'CreationDate' => self::CREATED ) );
+		return $template->render( $archival )->render( $metadata + array( 'CreationDate' => self::CREATED ) );
 	}
 
 	/**
@@ -87,6 +88,7 @@ final class Fixtures {
 			email: 'accounts@northwind.example',
 			tax_id: 'IE1234567X',
 			registration: '654321',
+			country: 'IE',
 		);
 	}
 
@@ -440,6 +442,189 @@ final class Fixtures {
 			total: $totals->total(),
 			supply_date: '18 November 2026',
 			status: 'Due',
+		);
+	}
+
+	/* ─── E-invoices ────────────────────────────────────────────────── */
+
+	/**
+	 * Every e-invoice fixture, by name: one per profile, between them
+	 * covering standard and mixed rates with a discount, reverse charge to
+	 * a Polish buyer, a credit note and an intra-community supply.
+	 *
+	 * @return array<string, array{0: Invoice, 1: FacturX}>
+	 */
+	public static function einvoices(): array {
+		return array(
+			'einvoice-en16931'  => self::einvoice_en16931(),
+			'einvoice-basic'    => self::einvoice_basic(),
+			'einvoice-basic-wl' => self::einvoice_basic_wl(),
+			'einvoice-minimum'  => self::einvoice_minimum(),
+		);
+	}
+
+	/**
+	 * An e-invoice's bytes, the same on every run.
+	 *
+	 * @param array{0: Invoice, 1: FacturX} $einvoice From einvoices().
+	 *
+	 * @return string
+	 */
+	public static function einvoice_bytes( array $einvoice ): string {
+		[ $invoice, $details ] = $einvoice;
+
+		return $invoice->factur_x( $details )->render( $invoice->metadata() + array( 'CreationDate' => self::CREATED ) );
+	}
+
+	/**
+	 * A business buyer in Germany.
+	 *
+	 * @return Party
+	 */
+	public static function german_buyer(): Party {
+		return new Party( 'Klangwerk GmbH', array( 'Torstraße 109', '10119 Berlin', 'Germany' ), 'rechnung@klangwerk.example', 'DE811907980', country: 'DE' );
+	}
+
+	/**
+	 * An invoice from its figures, with what an e-invoice states besides.
+	 *
+	 * @param Totals         $totals  The figures.
+	 * @param Party          $to      The buyer.
+	 * @param FacturXProfile $profile The profile.
+	 * @param array          $invoice Further Invoice arguments, by name.
+	 * @param array          $details Further FacturX arguments, by name.
+	 *
+	 * @phpstan-param array<string, mixed> $invoice
+	 * @phpstan-param array<string, mixed> $details
+	 *
+	 * @return array{0: Invoice, 1: FacturX}
+	 */
+	public static function einvoice( Totals $totals, Party $to, FacturXProfile $profile, array $invoice = array(), array $details = array() ): array {
+		$kind = $invoice['kind'] ?? DocumentKind::Invoice;
+
+		return array(
+			new Invoice(
+				...array_merge(
+					array(
+						'branding'    => self::branding(),
+						'number'      => 'INV-2026-0060',
+						'from'        => self::seller(),
+						'to'          => $to,
+						'items'       => $totals->items(),
+						'totals'      => $totals->rows(),
+						'total'       => $totals->total( $kind->total_label() ),
+						'vat_lines'   => $totals->vat_lines(),
+						'supply_date' => '17 November 2026',
+						'details'     => array(
+							'Issued' => '18 November 2026',
+							'Due'    => '18 December 2026',
+						),
+					),
+					$invoice
+				)
+			),
+			new FacturX(
+				...array_merge(
+					array(
+						'totals'        => $totals,
+						'issued'        => new \DateTimeImmutable( '2026-11-18', new \DateTimeZone( 'Europe/Dublin' ) ),
+						'profile'       => $profile,
+						'due'           => new \DateTimeImmutable( '2026-12-18', new \DateTimeZone( 'Europe/Dublin' ) ),
+						'payment_terms' => 'Within 30 days, by transfer to IE29 AIBK 9311 5212 3456 78.',
+					),
+					$details
+				)
+			),
+		);
+	}
+
+	/**
+	 * EN 16931: two rates, a percentage discount shared across them, a
+	 * line note and the buyer's reference.
+	 *
+	 * @return array{0: Invoice, 1: FacturX}
+	 */
+	public static function einvoice_en16931(): array {
+		$totals = new Totals(
+			lines: array(
+				new TotalsLine( 'Drum Kit Vol. 2 — studio licence', 14900, note: 'Licence period: 18 November 2026 to 17 November 2027' ),
+				new TotalsLine( 'Vintage Keys', 8900, 2 ),
+				new TotalsLine( 'Sound design handbook, printed', 3500, rate: 9 ),
+			),
+			currency: 'EUR',
+			rate: 23,
+			discounts: array( Discount::percent( 'Discount (SPRING10)', 10 ) ),
+		);
+
+		return self::einvoice( $totals, self::german_buyer(), FacturXProfile::En16931, details: array( 'buyer_reference' => 'PO-77812' ) );
+	}
+
+	/**
+	 * Basic: reverse charge to a Polish business, in letters Helvetica
+	 * cannot print, which the family draws.
+	 *
+	 * @return array{0: Invoice, 1: FacturX}
+	 */
+	public static function einvoice_basic(): array {
+		$totals = new Totals( array( new TotalsLine( 'Mixing and mastering, 12 tracks', 124000 ) ), 'EUR' );
+		$buyer  = new Party( 'Wytwórnia Dźwięku Łódź Sp. z o.o.', array( 'ul. Piotrkowska 104', '90-006 Łódź', 'Polska' ), tax_id: 'PL7251234567', country: 'PL' );
+
+		return self::einvoice(
+			$totals,
+			$buyer,
+			FacturXProfile::Basic,
+			array(
+				'number'    => 'INV-2026-0061',
+				'vat'       => VatTreatment::ReverseCharge,
+				'vat_lines' => array( new VatLine( '0%', $totals->format( $totals->net() ), $totals->format( 0 ) ) ),
+			)
+		);
+	}
+
+	/**
+	 * Basic WL: a credit note citing the invoice it reverses.
+	 *
+	 * @return array{0: Invoice, 1: FacturX}
+	 */
+	public static function einvoice_basic_wl(): array {
+		$totals = new Totals( array( new TotalsLine( 'Vintage Keys — refund of one licence', 8900 ) ), 'EUR', 23 );
+
+		return self::einvoice(
+			$totals,
+			self::german_buyer(),
+			FacturXProfile::BasicWl,
+			array(
+				'number'    => 'CN-2026-0008',
+				'kind'      => DocumentKind::CreditNote,
+				'reference' => 'INV-2026-0060',
+				'details'   => array( 'Issued' => '19 November 2026' ),
+			),
+			array(
+				'issued'        => new \DateTimeImmutable( '2026-11-19', new \DateTimeZone( 'Europe/Dublin' ) ),
+				'payment_terms' => 'Refunded to the original card within 5 working days.',
+				'due'           => null,
+			)
+		);
+	}
+
+	/**
+	 * Minimum: an intra-community supply of goods, the header and totals
+	 * alone.
+	 *
+	 * @return array{0: Invoice, 1: FacturX}
+	 */
+	public static function einvoice_minimum(): array {
+		$totals = new Totals( array( new TotalsLine( 'Field recorder', 49900, 3 ) ), 'EUR' );
+
+		return self::einvoice(
+			$totals,
+			self::german_buyer(),
+			FacturXProfile::Minimum,
+			array(
+				'number' => 'INV-2026-0062',
+				'vat'    => VatTreatment::IntraCommunitySupply,
+			),
+			array( 'delivered' => new \DateTimeImmutable( '2026-11-17', new \DateTimeZone( 'Europe/Dublin' ) ) )
 		);
 	}
 }

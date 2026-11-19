@@ -257,4 +257,27 @@ enum DocumentKind: string {
 	public function requires_reference(): bool {
 		return self::CreditNote === $this || self::DebitNote === $this;
 	}
+
+	/**
+	 * The UNTDID 1001 code an e-invoice states the kind with.
+	 *
+	 * Null for the kinds that are not invoices. A delivery note and a
+	 * purchase order are real documents with message types of their own;
+	 * giving one an invoice's code would put it in somebody's ledger as a
+	 * bill. A receipt is the paid invoice's record, not a second invoice.
+	 *
+	 * @since 1.5.0
+	 *
+	 * @return string|null
+	 */
+	public function factur_x_type_code(): ?string {
+		return match ( $this ) {
+			self::Invoice     => '380',
+			self::CreditNote  => '381',
+			self::DebitNote   => '383',
+			self::Proforma    => '325',
+			self::SelfBilling => '389',
+			default           => null,
+		};
+	}
 }

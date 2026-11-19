@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+#
+# Fetch the validators the conformance tests put this library's output
+# through, into .validator/ (gitignored):
+#
+#   pdf  veraPDF 1.30.4, the reference PDF/A validator (Java). Needs java.
+#   xml  The UN/CEFACT CII D16B schema (from the EN 16931 reference
+#        artefacts, EUPL-1.2), the Factur-X profile Schematron (from
+#        Mustang, Apache-2.0), the ISO Schematron compiler (MIT) and Saxon
+#        through pip, because the Schematron is XSLT 2.0. Needs python3 and
+#        xmllint.
+#
+# Every artefact is pinned and published; none is committed, and nothing
+# is uploaded anywhere — the invoices stay on this machine.
+#
+#   bin/validators          # both
+#   bin/validators xml      # one
+#
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cache="$root/.validator"
+parts=("${@:-pdf xml}")
+mkdir -p "$cache"
+
+say() { printf '%s\n' "$*"; }
+
+fetch() {
+	curl -fsSL --retry 3 -o "$2" "$1"
+}
+
+verapdf() {
+	if [ -x "$cache/verapdf/verapdf" ]; then
+		say 'veraPDF: already installed.'
+		return
+	fi
+
+	say 'veraPDF: fetching 1.30.4…'
+	fetch https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.4-installer.zip "$cache/verapdf.zip"
+	rm -rf "$cache/verapdf-installer" && mkdir -p "$cache/verapdf-installer"
+	unzip -q -o "$cache/verapdf.zip" -d "$cache/verapdf-installer"
+
+	cat > "$cache/verapdf-install.xml" <<-XML
+	<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+	<AutomatedInstallation langpack="eng">
+	  <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+	  <com.izforge.izpack.panels.target.TargetPanel id="install_dir">
+	    <installpath>$cache/verapdf</installpath>
+	  </com.izforge.izpack.panels.target.TargetPanel>
+	  <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select">
+	    <pack index="0" name="veraPDF Mac and *nix Scripts" selected="true"/>
+	    <pack index="1" name="veraPDF Validation model" selected="true"/>
+	    <pack index="2" name="veraPDF Documentation" selected="false"/>
+	    <pack index="3" name="veraPDF Sample Plugins" selected="false"/>
+	  </com.izforge.izpack.panels.packs.PacksPanel>
+	  <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+	  <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+	</AutomatedInstallation>
+	XML
+
+	java -jar "$cache"/verapdf-installer/*/verapdf-izpack-installer-*.jar "$cache/verapdf-install.xml" > /dev/null
+	"$cache/verapdf/verapdf" --version | head -1
+}
+
+schematron() {
+	local en16931=validation-1.3.17
+	local mustang=0abe7bba61f0d248d0c96cedf03f975837a7e252
+	local iso=77dcd36c53d12ed786c144ece3b2af7694abdc56
+
+	local xsd="$cache/xsd"
+	local base="https://raw.githubusercontent.com/ConnectingEurope/eInvoicing-EN16931/$en16931/cii/schema/D16B%20SCRDM%20(Subset)/uncoupled%20clm/CII/uncefact/data/standard"
+	if [ ! -f "$xsd/CrossIndustryInvoice_100pD16B.xsd" ]; then
+		say "CII D16B schema: fetching from EN 16931 ${en16931}…"
+		mkdir -p "$xsd"
+		for f in CrossIndustryInvoice_100pD16B.xsd \
+			CrossIndustryInvoice_QualifiedDataType_100pD16B.xsd \
+			CrossIndustryInvoice_ReusableAggregateBusinessInformationEntity_100pD16B.xsd \
+			CrossIndustryInvoice_UnqualifiedDataType_100pD16B.xsd; do
+			fetch "$base/$f" "$xsd/$f"
+		done
+	fi
+
+	local sch="$cache/schematron"
+	if [ ! -f "$sch/FACTUR-X_EN16931.sch" ]; then
+		say 'Factur-X profile rules: fetching…'
+		mkdir -p "$sch"
+		for profile in MINIMUM BASIC-WL BASIC EN16931; do
+			for f in "FACTUR-X_$profile.sch" "FACTUR-X_${profile}_codedb.xml"; do
+				fetch "https://raw.githubusercontent.com/ZUGFeRD/mustangproject/$mustang/validator/src/main/resources/schematron/ZF_250/$f" "$sch/$f"
+			done
+		done
+	fi
+
+	if [ ! -f "$cache/iso/iso_svrl_for_xslt2.xsl" ]; then
+		say 'ISO Schematron compiler: fetching…'
+		mkdir -p "$cache/iso"
+		for f in iso_dsdl_include.xsl iso_abstract_expand.xsl iso_svrl_for_xslt2.xsl \
+			iso_schematron_skeleton_for_saxon.xsl; do
+			fetch "https://raw.githubusercontent.com/Schematron/schematron/$iso/trunk/schematron/code/$f" "$cache/iso/$f"
+		done
+	fi
+
+	if [ ! -x "$cache/venv/bin/python" ]; then
+		say 'Saxon: installing…'
+		python3 -m venv "$cache/venv"
+		"$cache/venv/bin/pip" install -q 'saxonche==13.0.0'
+	fi
+}
+
+for part in ${parts[*]}; do
+	case "$part" in
+		pdf) verapdf ;;
+		xml) schematron ;;
+		*) say "Unknown part: $part (pdf or xml)" >&2; exit 2 ;;
+	esac
+done

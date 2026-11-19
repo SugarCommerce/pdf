@@ -1,0 +1,27 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0060
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Klangwerk GmbH Issued 18 November 2026
+12 Example Street Torstraße 109 Due 18 December 2026
+Dublin 2, D02 X285 10119 Berlin Date of supply 17 November 2026
+Ireland Germany
+accounts@northwind.example rechnung@klangwerk.example
+VAT IE1234567X VAT DE811907980
+Company no. 654321
+Description Qty Unit price Amount
+Drum Kit Vol. 2 — studio licence 1 €149.00 €149.00
+Licence period: 18 November 2026 to 17 November 2027
+Vintage Keys 2 €89.00 €178.00
+Sound design handbook, printed 1 €35.00 €35.00
+VAT BREAKDOWN
+Rate Net VAT
+23% €294.30 €67.69
+9% €31.50 €2.84
+Subtotal €362.00
+Discount (SPRING10) -€36.20
+VAT at 23% €67.69
+VAT at 9% €2.84
+Total due €396.33
+Northwind Audio Ltd is registered in Ireland, company number 654321.
