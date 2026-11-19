@@ -1,0 +1,24 @@
+NORTHWIND AUDIO
+Sample packs and presets
+FACTURE
+INV-2026-0046
+DE FACTURÉ À DÉTAILS
+Northwind Audio Ltd Studio Belleville SARL Date de prestation 18 novembre 2026
+12 Example Street 21 rue de Belleville
+Dublin 2, D02 X285 75019 Paris
+Ireland France
+accounts@northwind.example TVA FR40303265045
+TVA IE1234567X
+N° d'immatriculation 654321
+Description Qté Prix unitaire Montant
+Enregistreur de terrain 3 €499.00 €1,497.00
+DÉTAIL DE LA TVA
+Taux Net TVA
+0% €1,497.00 €0.00
+Sous-total €1,497.00
+Total à payer €1,497.00
+Zero-rated intra-community supply.
+Article 138, Council Directive 2006/112/EC.
+Livraison intracommunautaire exonérée.
+Article 262 ter I du CGI ; article 138 de la directive 2006/112/CE.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

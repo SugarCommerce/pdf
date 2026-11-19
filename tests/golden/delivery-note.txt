@@ -1,0 +1,18 @@
+NORTHWIND AUDIO
+Sample packs and presets
+DELIVERY NOTE
+DN-2026-0012
+FROM DELIVER TO DETAILS
+Northwind Audio Ltd Acme Recordings Ltd Despatched 18 November 2026
+12 Example Street Studio 4, 118 Brick Lane
+Dublin 2, D02 X285 London E1 6RL
+Ireland
+accounts@northwind.example
+VAT IE1234567X
+Company no. 654321
+Description Qty
+Field recorder, boxed 1
+Serial number FR-2207-1183
+Windshield 2
+Please check the contents against this note and report any discrepancy within 7 days.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

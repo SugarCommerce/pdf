@@ -1,0 +1,721 @@
+%PDF-1.4
+1 0 obj
+<</Type /Catalog /Pages 2 0 R>>
+endobj
+2 0 obj
+<</Type /Pages /Kids [7 0 R] /Count 1 /MediaBox [0 0 595.28 841.89]>>
+endobj
+3 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>
+endobj
+4 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding>>
+endobj
+5 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding>>
+endobj
+6 0 obj
+<</Producer (sugarcommerce/pdf) /CreationDate (D:20261118110640Z)>>
+endobj
+7 0 obj
+<</Type /Page /Parent 2 0 R /Resources <</Font <</F1 3 0 R /F2 4 0 R /F3 5 0 R>>>> /Contents 8 0 R>>
+endobj
+8 0 obj
+<</Length 5856>>
+stream
+q
+0.125 0.125 0.125 rg
+1 0 0 1 48.00 763.89 cm
+4.286 30.000 m
+30.000 30.000 l
+32.857 30.000 34.286 28.571 34.286 25.714 c
+34.286 4.286 l
+34.286 1.429 32.857 0.000 30.000 0.000 c
+4.286 0.000 l
+1.429 0.000 0.000 1.429 0.000 4.286 c
+0.000 25.714 l
+0.000 28.571 1.429 30.000 4.286 30.000 c
+h
+f
+Q
+q
+0.125 0.125 0.125 rg
+BT
+/F2 13.00 Tf
+90.00 780.89 Td
+(NORTHWIND AUDIO) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 768.89 Td
+(Sample packs and presets) Tj
+ET
+Q
+q
+0.125 0.125 0.125 rg
+BT
+/F2 20.00 Tf
+425.06 775.89 Td
+(STATEMENT) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 9.00 Tf
+483.25 761.89 Td
+(November 2026) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 756.89 Td
+(Northwind Audio Ltd) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 747.39 Td
+(12 Example Street) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 737.89 Td
+(Dublin 2, D02 X285) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 728.39 Td
+(Ireland) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 718.89 Td
+(accounts@northwind.example) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 709.39 Td
+(VAT IE1234567X) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 7.50 Tf
+90.00 699.89 Td
+(Company no. 654321) Tj
+ET
+Q
+q
+0.125 0.125 0.125 RG
+0.75 w
+48.00 690.24 m
+547.28 690.24 l
+S
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F2 7.00 Tf
+48.00 664.24 Td
+(ACCOUNT) Tj
+ET
+Q
+q
+0.125 0.125 0.125 rg
+BT
+/F2 11.00 Tf
+48.00 649.24 Td
+(Acme Recordings Ltd) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 8.50 Tf
+48.00 636.24 Td
+(Studio 4, 118 Brick Lane) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 8.50 Tf
+48.00 625.24 Td
+(London E1 6RL) Tj
+ET
+Q
+q
+0.451 0.451 0.451 rg
+BT
+/F1 8.50 Tf
+48.00 614.24 Td
+(Account ACME-01) Tj
+ET
+Q
+q
+0.118 0.118 0.118 rg
+BT
+/F2 8.50 Tf
+54.00 575.69 Td
+(Date) Tj
+ET
+Q
+q
+0.118 0.118 0.118 rg
+BT
+/F2 8.50 Tf
+123.90 575.69 Td
+(Description) Tj
+ET
+Q
+q
+0.118 0.118 0.118 rg
+BT
+/F2 8.50 Tf
+303.64 575.69 Td
+(Reference) Tj
+ET
+Q
+q
+0.118 0.118 0.118 rg
+BT
+/F2 8.50 Tf
+429.29 575.69 Td
+(Amount) Tj
+ET
+Q
+q
+0.118 0.118 0.118 rg
+BT
+/F2 8.50 Tf
+508.68 575.69 Td
+(Balance) Tj
+ET
+Q
+q
+0.235 0.235 0.235 RG
+0.75 w
+48.00 587.24 m
+547.28 587.24 l
+S
+Q
+q
+0.235 0.235 0.235 RG
+0.75 w
+48.00 570.24 m
+547.28 570.24 l
+S
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 558.69 Td
+(2026-11-01) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 558.69 Td
+(Order 1001) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 558.69 Td
+(INV-2001) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 558.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 558.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 541.69 Td
+(2026-11-02) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 541.69 Td
+(Order 1002) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 541.69 Td
+(INV-2002) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 541.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 541.69 Td
+(€20.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 524.69 Td
+(2026-11-03) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 524.69 Td
+(Order 1003) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 524.69 Td
+(INV-2003) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 524.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 524.69 Td
+(€30.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 507.69 Td
+(2026-11-04) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 507.69 Td
+(Order 1004) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 507.69 Td
+(INV-2004) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 507.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 507.69 Td
+(€40.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 490.69 Td
+(2026-11-05) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 490.69 Td
+(Order 1005) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 490.69 Td
+(INV-2005) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 490.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 490.69 Td
+(€50.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 473.69 Td
+(2026-11-06) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 473.69 Td
+(Order 1006) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 473.69 Td
+(INV-2006) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 473.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 473.69 Td
+(€60.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 456.69 Td
+(2026-11-07) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 456.69 Td
+(Order 1007) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 456.69 Td
+(INV-2007) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 456.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 456.69 Td
+(€70.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 439.69 Td
+(2026-11-08) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 439.69 Td
+(Order 1008) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 439.69 Td
+(INV-2008) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 439.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 439.69 Td
+(€80.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 422.69 Td
+(2026-11-09) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 422.69 Td
+(Order 1009) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 422.69 Td
+(INV-2009) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 422.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+515.29 422.69 Td
+(€90.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 405.69 Td
+(2026-11-10) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 405.69 Td
+(Order 1010) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 405.69 Td
+(INV-2010) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 405.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+510.56 405.69 Td
+(€100.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 388.69 Td
+(2026-11-11) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 388.69 Td
+(Order 1011) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 388.69 Td
+(INV-2011) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 388.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+510.56 388.69 Td
+(€110.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+54.00 371.69 Td
+(2026-11-12) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+123.90 371.69 Td
+(Order 1012) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+303.64 371.69 Td
+(INV-2012) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+435.40 371.69 Td
+(€10.00) Tj
+ET
+Q
+q
+BT
+/F1 8.50 Tf
+510.56 371.69 Td
+(€120.00) Tj
+ET
+Q
+q
+0.125 0.125 0.125 RG
+1.00 w
+322.60 356.24 m
+547.28 356.24 l
+S
+Q
+q
+0.125 0.125 0.125 rg
+BT
+/F2 10.50 Tf
+322.60 336.24 Td
+(Closing balance) Tj
+ET
+Q
+q
+0.125 0.125 0.125 rg
+BT
+/F2 13.00 Tf
+499.58 336.24 Td
+(€120.00) Tj
+ET
+Q
+q
+0.839 0.839 0.839 RG
+0.50 w
+322.60 324.24 m
+547.28 324.24 l
+S
+Q
+q
+0.839 0.839 0.839 RG
+0.50 w
+48.00 54.00 m
+547.28 54.00 l
+S
+Q
+q
+0.569 0.569 0.569 rg
+BT
+/F1 7.50 Tf
+48.00 42.00 Td
+(Northwind Audio — statement of account) Tj
+ET
+Q
+q
+0.569 0.569 0.569 rg
+BT
+/F1 7.50 Tf
+508.92 42.00 Td
+(Page 1 of 1) Tj
+ET
+Q
+
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000141 00000 n 
+0000000236 00000 n 
+0000000336 00000 n 
+0000000429 00000 n 
+0000000512 00000 n 
+0000000628 00000 n 
+trailer
+<</Size 9 /Root 1 0 R /Info 6 0 R>>
+startxref
+6534
+%%EOF

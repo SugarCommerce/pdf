@@ -54,6 +54,58 @@ final readonly class Branding {
 	) {}
 
 	/**
+	 * The seller as a document prints them.
+	 *
+	 * The party given, with this branding's address when it has none of
+	 * its own and this branding's name when it has no name — so a seller
+	 * who set their address once, here, has it on every document.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param Party|null $from The issuing party, if the document has one.
+	 *
+	 * @return Party
+	 */
+	public function seller( ?Party $from = null ): Party {
+		$from ??= new Party( '' );
+		$filled = array_filter( $from->address, static fn( mixed $line ): bool => is_scalar( $line ) && '' !== trim( (string) $line ) );
+
+		if ( array() !== $filled && '' !== trim( $from->name ) ) {
+			return $from;
+		}
+
+		return new Party(
+			'' !== trim( $from->name ) ? $from->name : $this->name,
+			array() !== $filled ? $from->address : $this->address,
+			$from->email,
+			$from->tax_id,
+			$from->registration
+		);
+	}
+
+	/**
+	 * The lines a compact masthead prints under the wordmark: the legal
+	 * name when it is not the wordmark, then the address, email, VAT and
+	 * registration numbers.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param Party      $seller     The seller, from {@see seller()}.
+	 * @param Translator $translator Wording source.
+	 *
+	 * @return list<string>
+	 */
+	public function seller_lines( Party $seller, Translator $translator ): array {
+		$lines = $seller->translated_lines( $translator );
+
+		if ( '' !== trim( $seller->name ) && mb_strtolower( trim( $seller->name ) ) !== mb_strtolower( trim( $this->name ) ) ) {
+			array_unshift( $lines, $seller->name );
+		}
+
+		return $lines;
+	}
+
+	/**
 	 * The accent colour.
 	 *
 	 * @since 1.0.0

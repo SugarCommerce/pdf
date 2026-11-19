@@ -45,3 +45,8 @@
 # through these same rules -- without this, a plugin built from a local clone
 # copies the library's phpunit and phpcs into its vendor-prefixed folder.
 /vendor export-ignore
+
+# Golden files are compared byte for byte: no line-ending conversion, and
+# the PDFs are not text to diff.
+/tests/golden/** -text
+/tests/golden/*.pdf binary

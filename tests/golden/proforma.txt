@@ -1,0 +1,21 @@
+NORTHWIND AUDIO
+Sample packs and presets
+PROFORMA
+PF-2026-0003
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Acme Recordings Ltd Valid until 18 December 2026
+12 Example Street Studio 4, 118 Brick Lane
+Dublin 2, D02 X285 London E1 6RL
+Ireland
+accounts@northwind.example
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Custom sound design, 40 presets 1 £1,800.00 £1,800.00
+Subtotal £1,800.00
+VAT at 20% £360.00
+Total £2,160.00
+Proforma invoice — not a VAT invoice. A tax invoice follows on payment.
+PAYMENT
+Scan to pay
+Northwind Audio Ltd is registered in Ireland, company number 654321.

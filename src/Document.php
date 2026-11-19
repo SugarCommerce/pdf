@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf;
 
+use SugarCommerce\Qr\QR;
+
 /**
  * Class Document
  *
@@ -67,6 +69,36 @@ final class Document {
 	 * @var (callable(Document, int, int): mixed)|null
 	 */
 	private $footer = null;
+
+	/**
+	 * Every run of text drawn, as a reader will extract it, in the order
+	 * it was drawn.
+	 *
+	 * Kept so a template's own checks can ask what actually reached the
+	 * page rather than what was in the data. On a document whose validity
+	 * depends on certain words appearing, only the first question is
+	 * worth answering.
+	 *
+	 * @var list<string>
+	 */
+	private array $drawn = array();
+
+	/**
+	 * Characters already transcoded, for text measured and drawn again.
+	 *
+	 * @var array<string, string>
+	 */
+	private static array $transcoded = array();
+
+	/**
+	 * Height kept clear above the bottom margin, for a footer.
+	 */
+	private float $clear = 0.0;
+
+	/**
+	 * The document's language, as a BCP 47 tag, or empty.
+	 */
+	private string $language = '';
 
 	/**
 	 * Start an empty document with the cursor at the top margin.
@@ -161,7 +193,75 @@ final class Document {
 	 * @return float
 	 */
 	public function remaining(): float {
-		return $this->y - $this->margin;
+		return $this->y - $this->margin - $this->clear;
+	}
+
+	/**
+	 * The height a fresh page gives the flow.
+	 *
+	 * From the top margin down to the bottom margin, less the band kept
+	 * clear for a footer: the most any one block can have.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return float
+	 */
+	public function page_room(): float {
+		return $this->page_height - ( $this->margin * 2 ) - $this->clear;
+	}
+
+	/**
+	 * Keep a band above the bottom margin clear of the flow.
+	 *
+	 * For a footer drawn in it: a footnote's rule sits above the margin,
+	 * and text flowed down to the margin runs through it. Everything that
+	 * breaks a page — {@see break_if_needed()}, {@see text()},
+	 * {@see block()}, a {@see Table} — breaks that much earlier.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param float $points Height of the band. Negative is taken as none.
+	 *
+	 * @return self
+	 */
+	public function keep_clear( float $points ): self {
+		$this->clear = max( 0.0, self::number( $points ) );
+
+		return $this;
+	}
+
+	/**
+	 * Say what language the document is in.
+	 *
+	 * Written to the catalogue as `/Lang`, which is what a screen reader
+	 * uses to pick a voice, and what PDF/A and PDF/UA validators look for.
+	 * Anything that is not a well-formed language tag is ignored rather
+	 * than written: the value goes into the file as a string.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $tag BCP 47 tag, e.g. `en`, `de-AT`. `de_AT` is read
+	 *                    as `de-AT`.
+	 *
+	 * @return self
+	 */
+	public function language( string $tag ): self {
+		$tag = str_replace( '_', '-', trim( $tag ) );
+
+		$this->language = 1 === preg_match( '/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/', $tag ) ? $tag : '';
+
+		return $this;
+	}
+
+	/**
+	 * The document's language tag, or empty when none was set.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return string
+	 */
+	public function language_tag(): string {
+		return $this->language;
 	}
 
 	/**
@@ -435,6 +535,10 @@ final class Document {
 		$shown   = self::winansi( $text );
 		$escaped = str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $shown );
 
+		// What a reader will extract, not what was asked for: a name the
+		// encoding cannot hold has not reached the page as written.
+		$this->drawn[] = (string) mb_convert_encoding( $shown, 'UTF-8', 'Windows-1252' );
+
 		// Alignment is computed from the measured width — the reason the
 		// font metrics exist at all. The escaping backslashes are never
 		// drawn, so they are not measured.
@@ -521,6 +625,181 @@ final class Document {
 		$this->y -= $this->leading;
 
 		return $this;
+	}
+
+	/**
+	 * Draw wrapped text in a column, advancing the cursor.
+	 *
+	 * Where {@see cell()} draws one line and anything past the box edge is
+	 * simply not there — right for a table cell cut short on purpose,
+	 * wrong for a note somebody wrote — this breaks the text into lines
+	 * that fit, keeps the newlines it was given, and starts a new page
+	 * when the next line would go below the bottom margin.
+	 *
+	 * The cursor marks the top of the first line and ends one line's
+	 * leading below the last, as {@see text()} does.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string     $text    Text; `\n` starts a new line.
+	 * @param float      $x       Left edge of the column.
+	 * @param float      $width   Column width.
+	 * @param float|null $size    Font size, or null for the document default.
+	 * @param Font       $font    Typeface.
+	 * @param Color|null $color   Colour.
+	 * @param Align      $align   Alignment of each line within the column.
+	 * @param float|null $leading Distance between baselines; 1.35 times the
+	 *                            size when null.
+	 *
+	 * @return self
+	 */
+	public function block(
+		string $text,
+		float $x,
+		float $width,
+		?float $size = null,
+		Font $font = Font::Helvetica,
+		?Color $color = null,
+		Align $align = Align::Left,
+		?float $leading = null
+	): self {
+		$size  ??= $this->font_size;
+		$step    = $leading ?? $size * 1.35;
+
+		foreach ( $this->wrap( $text, $font, $size, $width ) as $line ) {
+			$this->break_if_needed( $step );
+
+			if ( '' !== $line ) {
+				$this->text_at( $line, $x, $this->y - $font->ascender( $size ), $size, $font, $color, $align, $width );
+			}
+
+			$this->y -= $step;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * The height {@see block()} would take, without drawing anything.
+	 *
+	 * For sizing a panel, or keeping a block on one page, before its
+	 * contents go in.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string     $text    Text.
+	 * @param float      $width   Column width.
+	 * @param float|null $size    Font size.
+	 * @param Font       $font    Typeface.
+	 * @param float|null $leading Distance between baselines.
+	 *
+	 * @return float
+	 */
+	public function block_height( string $text, float $width, ?float $size = null, Font $font = Font::Helvetica, ?float $leading = null ): float {
+		$size ??= $this->font_size;
+
+		return count( $this->wrap( $text, $font, $size, $width ) ) * ( $leading ?? $size * 1.35 );
+	}
+
+	/**
+	 * Text broken into the lines that fit a width.
+	 *
+	 * The same breaks {@see block()} makes: at spaces, at the newlines
+	 * given, and through a word wider than the column.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string     $text  Text.
+	 * @param float      $width Column width.
+	 * @param float|null $size  Font size.
+	 * @param Font       $font  Typeface.
+	 *
+	 * @return list<string>
+	 */
+	public function lines( string $text, float $width, ?float $size = null, Font $font = Font::Helvetica ): array {
+		return $this->wrap( $text, $font, $size ?? $this->font_size, $width );
+	}
+
+	/**
+	 * The width of text as this document will draw it.
+	 *
+	 * Measured after transcoding, so `€` counts as the one character it
+	 * prints as rather than the three bytes it is in UTF-8.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string     $text Text.
+	 * @param float|null $size Font size.
+	 * @param Font       $font Typeface.
+	 *
+	 * @return float
+	 */
+	public function width( string $text, ?float $size = null, Font $font = Font::Helvetica ): float {
+		return $font->width_of( self::winansi( $text ), $size ?? $this->font_size );
+	}
+
+	/**
+	 * Text shortened with an ellipsis to fit a width, measured as drawn.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string     $text  Text.
+	 * @param float      $width Available width.
+	 * @param float|null $size  Font size.
+	 * @param Font       $font  Typeface.
+	 *
+	 * @return string The text unchanged when it fits.
+	 */
+	public function fit( string $text, float $width, ?float $size = null, Font $font = Font::Helvetica ): string {
+		$size ??= $this->font_size;
+
+		if ( $this->width( $text, $size, $font ) <= $width ) {
+			return $text;
+		}
+
+		$budget = $width - $font->width_of( '...', $size );
+		$kept   = '';
+		$used   = 0.0;
+
+		foreach ( self::characters( $text ) as $character ) {
+			$used += $font->width_of( self::winansi( $character ), $size );
+
+			if ( $used > $budget ) {
+				break;
+			}
+
+			$kept .= $character;
+		}
+
+		return rtrim( $kept ) . '...';
+	}
+
+	/**
+	 * Every run of text drawn so far, as a reader will extract it.
+	 *
+	 * Text is recorded after transcoding — a name Windows-1252 cannot
+	 * hold is recorded the way it was printed — and includes what the
+	 * footer draws on each page.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return list<string>
+	 */
+	public function drawn_text(): array {
+		if ( null === $this->footer ) {
+			return $this->drawn;
+		}
+
+		$saved   = $this->drawn;
+		$pages   = $this->pages;
+		$pages[] = $this->current;
+
+		$this->apply_footers( $pages );
+
+		$footers     = array_slice( $this->drawn, count( $saved ) );
+		$this->drawn = $saved;
+
+		return array_merge( $saved, $footers );
 	}
 
 	/* ─── Vector ────────────────────────────────────────────────────── */
@@ -647,6 +926,78 @@ final class Document {
 		return $this;
 	}
 
+	/**
+	 * Draw a QR code with its bottom-left corner at a point.
+	 *
+	 * Drawn as vector squares — each run of dark modules in a row is one
+	 * rectangle — so it is sharp at any zoom and on any printer, where a
+	 * bitmap at the wrong scale arrives soft-edged. The modules come from
+	 * sugarcommerce/qr.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string      $data  What the code says.
+	 * @param float       $x     Left edge.
+	 * @param float       $y     Bottom edge.
+	 * @param float       $size  Width and height of the square, quiet zone
+	 *                           included. Below about 70 points a printed
+	 *                           code stops scanning reliably.
+	 * @param Color|null  $color Colour of the dark modules.
+	 * @param string|null $level L, M, Q or H; null for M, falling back to L
+	 *                           for text too long for M.
+	 * @param int         $quiet Clear margin in modules. The standard asks
+	 *                           for four, and scanners do fail without it.
+	 *
+	 * @return bool Whether a code was drawn: false for empty text, text too
+	 *              long for any code, or a level that is not one of the four.
+	 */
+	public function qr( string $data, float $x, float $y, float $size, ?Color $color = null, ?string $level = null, int $quiet = 4 ): bool {
+		if ( '' === trim( $data ) || $size <= 0 ) {
+			return false;
+		}
+
+		try {
+			$matrix = QR::matrix( $data, $level );
+		} catch ( \InvalidArgumentException ) {
+			return false;
+		}
+
+		$count  = count( $matrix );
+		$margin = max( 0, $quiet );
+		$module = $size / ( $count + ( $margin * 2 ) );
+		$path   = '';
+
+		foreach ( $matrix as $row => $modules ) {
+			$modules[] = false;
+			$start     = null;
+
+			foreach ( $modules as $column => $dark ) {
+				if ( $dark && null === $start ) {
+					$start = $column;
+				} elseif ( ! $dark && null !== $start ) {
+					// The matrix reads top down and the page counts up from
+					// the bottom; written straight out, the code is mirrored.
+					$path .= sprintf(
+						"%.3F %.3F %.3F %.3F re\n",
+						self::number( $x + ( ( $start + $margin ) * $module ) ),
+						self::number( $y + $size - ( ( $row + $margin + 1 ) * $module ) ),
+						self::number( ( $column - $start ) * $module ),
+						self::number( $module )
+					);
+					$start = null;
+				}
+			}
+		}
+
+		if ( '' === $path ) {
+			return false;
+		}
+
+		$this->current .= "q\n" . ( $color ?? Color::black() )->operands() . " rg\n" . $path . "f\nQ\n";
+
+		return true;
+	}
+
 	/* ─── Output ────────────────────────────────────────────────────── */
 
 	/**
@@ -670,7 +1021,14 @@ final class Document {
 			$pages[] = $this->current;
 		}
 
-		return Writer::write( $this->apply_footers( $pages ), $this->page_width, $this->page_height, $metadata );
+		$saved   = $this->drawn;
+		$stamped = $this->apply_footers( $pages );
+
+		// The footers' text belongs to this render, not to the document:
+		// rendering twice must not record the page numbers twice.
+		$this->drawn = $saved;
+
+		return Writer::write( $stamped, $this->page_width, $this->page_height, $metadata, $this->language );
 	}
 
 	/**
@@ -744,6 +1102,7 @@ final class Document {
 	 */
 	private function wrap( string $text, Font $font, float $size, float $width ): array {
 		$lines = array();
+		$space = $font->width_of( ' ', $size );
 
 		foreach ( explode( "\n", $text ) as $paragraph ) {
 			$paragraph = rtrim( $paragraph );
@@ -754,27 +1113,35 @@ final class Document {
 			}
 
 			$line = '';
+			$used = 0.0;
 
+			// Each word is measured once and the line's width kept as a
+			// sum: there is no kerning in the base fonts, so a line is
+			// exactly its words and the spaces between them. Re-measuring
+			// the whole line for every word is quadratic in its length.
 			foreach ( explode( ' ', $paragraph ) as $word ) {
-				$candidate = '' === $line ? $word : $line . ' ' . $word;
+				$advance = $font->width_of( self::winansi( $word ), $size );
 
-				if ( $font->width_of( self::winansi( $candidate ), $size ) <= $width ) {
-					$line = $candidate;
+				if ( '' === $line && $advance <= $width ) {
+					$line = $word;
+					$used = $advance;
+					continue;
+				}
+
+				if ( '' !== $line && $used + $space + $advance <= $width ) {
+					$line .= ' ' . $word;
+					$used += $space + $advance;
 					continue;
 				}
 
 				if ( '' !== $line ) {
 					$lines[] = $line;
-					$line    = '';
 				}
 
 				// A single word wider than the column — a long URL, say —
 				// must be cut or it runs off the page.
-				if ( $font->width_of( self::winansi( $word ), $size ) > $width ) {
-					$word = self::cut( $word, $font, $size, $width, $lines );
-				}
-
-				$line = $word;
+				$line = $advance > $width ? self::cut( $word, $font, $size, $width, $lines ) : $word;
+				$used = $font->width_of( self::winansi( $line ), $size );
 			}
 
 			if ( '' !== $line ) {
@@ -990,8 +1357,14 @@ final class Document {
 		} else {
 			$converted = '';
 
+			// A bound on what the cache holds: a hostile string of every
+			// code point would otherwise grow it without limit.
+			if ( count( self::$transcoded ) > 4096 ) {
+				self::$transcoded = array();
+			}
+
 			foreach ( mb_str_split( $text, 1, 'UTF-8' ) as $character ) {
-				$converted .= self::winansi_character( $character );
+				$converted .= self::$transcoded[ $character ] ??= self::winansi_character( $character );
 			}
 		}
 

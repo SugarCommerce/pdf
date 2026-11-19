@@ -1,0 +1,31 @@
+NORTHWIND AUDIO
+Sample packs and presets
+STATEMENT
+November 2026
+Northwind Audio Ltd
+12 Example Street
+Dublin 2, D02 X285
+Ireland
+accounts@northwind.example
+VAT IE1234567X
+Company no. 654321
+ACCOUNT
+Acme Recordings Ltd
+Studio 4, 118 Brick Lane
+London E1 6RL
+Account ACME-01
+Date Description Reference Amount Balance
+2026-11-01 Order 1001 INV-2001 €10.00 €10.00
+2026-11-02 Order 1002 INV-2002 €10.00 €20.00
+2026-11-03 Order 1003 INV-2003 €10.00 €30.00
+2026-11-04 Order 1004 INV-2004 €10.00 €40.00
+2026-11-05 Order 1005 INV-2005 €10.00 €50.00
+2026-11-06 Order 1006 INV-2006 €10.00 €60.00
+2026-11-07 Order 1007 INV-2007 €10.00 €70.00
+2026-11-08 Order 1008 INV-2008 €10.00 €80.00
+2026-11-09 Order 1009 INV-2009 €10.00 €90.00
+2026-11-10 Order 1010 INV-2010 €10.00 €100.00
+2026-11-11 Order 1011 INV-2011 €10.00 €110.00
+2026-11-12 Order 1012 INV-2012 €10.00 €120.00
+Closing balance €120.00
+Northwind Audio — statement of account Page 1 of 1

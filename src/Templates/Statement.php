@@ -59,6 +59,12 @@ final readonly class Statement {
 	 * @param Translator                     $translator  Source of the
 	 *                                                    template's own
 	 *                                                    wording.
+	 * @param Party|null                     $from        Who issues it
+	 *                                                    (since 1.2.0):
+	 *                                                    printed under the
+	 *                                                    wordmark, with the
+	 *                                                    branding's address
+	 *                                                    when it has none.
 	 */
 	public function __construct(
 		public Branding $branding,
@@ -77,6 +83,7 @@ final readonly class Statement {
 		public PageSize $size = PageSize::A4,
 		public Orientation $orientation = Orientation::Portrait,
 		public Translator $translator = Language::English,
+		public ?Party $from = null,
 	) {}
 
 	/**
@@ -110,6 +117,9 @@ final readonly class Statement {
 	public function render(): Document {
 		$pdf   = new Document( $this->size, $this->orientation, margin: 48, font_size: 9, leading: 12.5 );
 		$brand = $this->branding;
+
+		// The footer's rule is six points above the bottom margin.
+		$pdf->keep_clear( 12 );
 
 		$this->masthead( $pdf );
 		$this->account_block( $pdf );
@@ -156,7 +166,7 @@ final readonly class Statement {
 	public function save( string $path ): int {
 		return $this->render()->save( $path, array(
 			'Title'   => $this->translator->translate( 'statement', 'STATEMENT' ) . ' — ' . $this->period,
-			'Author'  => $this->branding->name,
+			'Author'  => $this->branding->seller( $this->from )->name,
 			'Subject' => 'Statement for ' . $this->account->name,
 		) );
 	}
@@ -189,7 +199,16 @@ final readonly class Statement {
 		$pdf->text_at( $this->translator->translate( 'statement', 'STATEMENT' ), $pdf->left(), $top - 18, 20, Font::HelveticaBold, $brand->ink(), Align::Right, $pdf->content_width() );
 		$pdf->text_at( $this->period, $pdf->left(), $top - 32, 9, Font::Helvetica, $brand->muted(), Align::Right, $pdf->content_width() );
 
-		$pdf->move_to( $top - 56 );
+		$rule_y = $top - 56;
+		$lines  = $brand->seller_lines( $brand->seller( $this->from ), $this->translator );
+
+		if ( array() !== $lines ) {
+			$pdf->move_to( $top - 37 + Font::Helvetica->ascender( 7.5 ) );
+			$pdf->block( implode( "\n", $lines ), $x, $pdf->content_width() * 0.55, 7.5, Font::Helvetica, $brand->muted(), Align::Left, 9.5 );
+			$rule_y = min( $rule_y, $pdf->cursor() - 6 );
+		}
+
+		$pdf->move_to( $rule_y );
 		$pdf->line( $pdf->left(), $pdf->cursor(), $pdf->right(), $pdf->cursor(), $brand->ink(), 0.75 );
 		$pdf->move_to( $pdf->cursor() - 26 );
 	}

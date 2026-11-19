@@ -47,6 +47,10 @@ final readonly class Receipt {
 	 * @param PageSize              $size       Paper size.
 	 * @param Translator            $translator Source of the template's own
 	 *                                          wording.
+	 * @param Party|null            $from       Who was paid (since 1.2.0):
+	 *                                          printed under the wordmark,
+	 *                                          with the branding's address
+	 *                                          when it has none.
 	 */
 	public function __construct(
 		public Branding $branding,
@@ -59,6 +63,7 @@ final readonly class Receipt {
 		public string $notes = '',
 		public PageSize $size = PageSize::A5,
 		public Translator $translator = Language::English,
+		public ?Party $from = null,
 	) {}
 
 	/**
@@ -83,7 +88,18 @@ final readonly class Receipt {
 		$pdf->text_at( $this->translator->translate( 'receipt', 'RECEIPT' ), $pdf->left(), $top - 12, 15, Font::HelveticaBold, $brand->ink(), Align::Right, $pdf->content_width() );
 		$pdf->text_at( $this->number, $pdf->left(), $top - 25, 8.5, Font::Helvetica, $brand->muted(), Align::Right, $pdf->content_width() );
 
-		$pdf->move_to( $top - 44 );
+		// Who was paid: a receipt is a record, and a record that does not
+		// say who issued it is not much of one.
+		$rule_y = $top - 44;
+		$lines  = $brand->seller_lines( $brand->seller( $this->from ), $this->translator );
+
+		if ( array() !== $lines ) {
+			$pdf->move_to( $top - 26 + Font::Helvetica->ascender( 7.5 ) );
+			$pdf->block( implode( "\n", $lines ), $x, $pdf->content_width() * 0.55, 7.5, Font::Helvetica, $brand->muted(), Align::Left, 9.5 );
+			$rule_y = min( $rule_y, $pdf->cursor() - 6 );
+		}
+
+		$pdf->move_to( $rule_y );
 		$pdf->line( $pdf->left(), $pdf->cursor(), $pdf->right(), $pdf->cursor(), $brand->ink(), 0.75 );
 		$pdf->move_to( $pdf->cursor() - 22 );
 
@@ -93,10 +109,7 @@ final readonly class Receipt {
 		$pdf->gap( 8 );
 
 		$pdf->text( $this->to->name, 10, Font::HelveticaBold, $brand->ink() );
-
-		foreach ( $this->to->translated_lines( $this->translator ) as $line ) {
-			$pdf->text( $line, 8.5, Font::Helvetica, $brand->muted() );
-		}
+		$pdf->block( implode( "\n", $this->to->translated_lines( $this->translator ) ), $pdf->left(), $pdf->content_width(), 8.5, Font::Helvetica, $brand->muted(), Align::Left, $pdf->leading );
 
 		if ( array() !== $this->details ) {
 			$pdf->gap( 10 );
@@ -118,11 +131,12 @@ final readonly class Receipt {
 			->align( array( 1 => Align::Right ) )
 			->row_height( 18 );
 
-		foreach ( $this->items as $item ) {
-			$description = '' !== $item->note ? $item->description . '   ' . $item->note : $item->description;
-			$quantity    = '1' !== $item->quantity ? ' x' . $item->quantity : '';
+		$table->wrap();
 
-			$table->row( array( $description . $quantity, $item->amount ) );
+		foreach ( $this->items as $item ) {
+			$quantity = '1' !== $item->quantity ? ' x' . $item->quantity : '';
+
+			$table->row( array( $item->description . $quantity, $item->amount ), $item->note );
 		}
 
 		$table->draw( $pdf, 8.5 );
@@ -153,7 +167,7 @@ final readonly class Receipt {
 			$pdf->gap( 26 );
 			$pdf->line( $pdf->left(), $pdf->cursor() + 12, $pdf->right(), $pdf->cursor() + 12, $brand->hairline(), 0.5 );
 			$pdf->gap( 6 );
-			$pdf->text( $this->notes, 8, Font::Helvetica, $brand->muted() );
+			$pdf->block( $this->notes, $pdf->left(), $pdf->content_width(), 8, Font::Helvetica, $brand->muted(), Align::Left, 11 );
 		}
 
 		return $pdf;
@@ -171,7 +185,7 @@ final readonly class Receipt {
 	public function save( string $path ): int {
 		return $this->render()->save( $path, array(
 			'Title'  => $this->translator->translate( 'receipt', 'RECEIPT' ) . ' ' . $this->number,
-			'Author' => $this->branding->name,
+			'Author' => $this->branding->seller( $this->from )->name,
 		) );
 	}
 }

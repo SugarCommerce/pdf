@@ -1,0 +1,27 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0043
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Klangwerk GmbH Issued 18 November 2026
+12 Example Street Torstraße 109 Due 2 December 2026
+Dublin 2, D02 X285 10119 Berlin Date of supply 1 November 2026
+Ireland Germany
+accounts@northwind.example VAT DE811907980
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Mixing and mastering, 12 tracks 1 €1,240.00 €1,240.00
+VAT BREAKDOWN
+Rate Net VAT
+0% €1,240.00 €0.00
+Subtotal €1,240.00
+Total due €1,240.00
+Reverse charge: VAT to be accounted for by the recipient.
+Article 196, Council Directive 2006/112/EC.
+Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).
+PAYMENT
+Pay by SEPA transfer to IE29 AIBK 9311 5212 3456 78, quoting INV-2026-0043.
+The code beside this note fills the transfer in.
+Scan to pay
+Northwind Audio Ltd is registered in Ireland, company number 654321.

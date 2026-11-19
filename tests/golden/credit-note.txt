@@ -1,0 +1,19 @@
+NORTHWIND AUDIO
+Sample packs and presets
+CREDIT NOTE
+CN-2026-0007
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Ada Lovelace Issued 19 November 2026
+12 Example Street 4 Marine Parade Date of supply 18 November 2026
+Dublin 2, D02 X285 Brighton BN2 1TL Original invoice INV-2026-0042
+Ireland United Kingdom
+accounts@northwind.example
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Vintage Keys — refund of one licence 1 €89.00 €89.00
+Subtotal €89.00
+VAT at 23% €20.47
+Total credited €109.47
+This credit note reverses the invoice referenced above. Retain both for your records.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

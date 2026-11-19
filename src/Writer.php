@@ -39,10 +39,15 @@ final readonly class Writer {
 	 *                                            Keywords, Creator, and
 	 *                                            CreationDate as a Unix
 	 *                                            timestamp.
+	 * @param string                    $language BCP 47 tag for the catalogue's
+	 *                                            `/Lang` (since 1.2.0), or empty
+	 *                                            for none. Anything else than
+	 *                                            letters, digits and hyphens is
+	 *                                            dropped.
 	 *
 	 * @return string Raw PDF bytes.
 	 */
-	public static function write( array $pages, float $width, float $height, array $metadata = array() ): string {
+	public static function write( array $pages, float $width, float $height, array $metadata = array(), string $language = '' ): string {
 		$pages = array() === $pages ? array( '' ) : $pages;
 
 		$objects   = array();
@@ -63,7 +68,8 @@ final readonly class Writer {
 			$objects[ $content_object ] = '<</Length ' . strlen( $stream ) . ">>\nstream\n" . $stream . "\nendstream";
 		}
 
-		$objects[1] = '<</Type /Catalog /Pages 2 0 R>>';
+		$language   = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $language );
+		$objects[1] = '<</Type /Catalog /Pages 2 0 R' . ( '' !== $language ? ' /Lang (' . $language . ')' : '' ) . '>>';
 		$objects[2] = '<</Type /Pages /Kids [' . implode( ' ', $page_refs ) . '] /Count ' . count( $pages )
 			. sprintf( ' /MediaBox [0 0 %.2F %.2F]>>', $width, $height );
 		$objects[3] = '<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>';

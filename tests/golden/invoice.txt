@@ -1,0 +1,25 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0042
+PAID
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Ada Lovelace Issued 18 November 2026
+12 Example Street 4 Marine Parade Paid by Card ending 4242
+Dublin 2, D02 X285 Brighton BN2 1TL Date of supply 18 November 2026
+Ireland United Kingdom
+accounts@northwind.example ada@example.com
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Drum Kit Vol. 2 — studio licence 1 €149.00 €149.00
+Licence period: 18 November 2026 to 17 November 2027
+Vintage Keys 2 €89.00 €178.00
+Sample clearance report 1 €45.00 €45.00
+Subtotal €372.00
+Discount (SPRING10) -€37.20
+VAT at 23% €77.00
+Total due €411.80
+PAYMENT
+Thank you for your order. Questions about this invoice go to accounts@northwind.example, quoting the number above.
+Northwind Audio Ltd is registered in Ireland, company number 654321.

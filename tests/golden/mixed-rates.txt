@@ -1,0 +1,24 @@
+NORTHWIND AUDIO
+Sample packs and presets
+INVOICE
+INV-2026-0044
+FROM BILLED TO DETAILS
+Northwind Audio Ltd Acme Recordings Ltd Date of supply 18 November 2026
+12 Example Street Studio 4, 118 Brick Lane
+Dublin 2, D02 X285 London E1 6RL
+Ireland VAT GB123456789
+accounts@northwind.example
+VAT IE1234567X
+Company no. 654321
+Description Qty Unit price Amount
+Production course, video 1 £99.00 £99.00
+Production course, printed workbook 1 £25.00 £25.00
+VAT BREAKDOWN
+Rate Net VAT
+20% £91.02 £18.20
+0% £22.98 £0.00
+Subtotal £124.00
+Voucher -£10.00
+VAT at 20% £18.20
+Total due £132.20
+Northwind Audio Ltd is registered in Ireland, company number 654321.

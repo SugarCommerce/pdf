@@ -61,6 +61,21 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --no-interaction
 
+      # Command-line tools a suite reads its own output back with -- for a
+      # PDF, poppler's pdftotext and pdffonts, and qpdf -- listed in
+      # composer.json under extra.ci.apt, so a package that needs none
+      # installs none. A suite that finds one missing in CI fails rather
+      # than skipping its strictest checks.
+      - name: System packages
+        run: |
+          packages="$(jq -r '(.extra.ci.apt // []) | join(" ")' composer.json)"
+          if [ -z "$packages" ]; then
+            echo 'None needed.'
+            exit 0
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends $packages
+
       # A suite built on wp-phpunit runs against real WordPress and a real
       # database: what it tests is what MySQL actually does.
       - name: WordPress test site

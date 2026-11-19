@@ -28,12 +28,16 @@ final readonly class Party {
 	 * @param array<int, string> $address Address lines.
 	 * @param string   $email   Contact address.
 	 * @param string   $tax_id  VAT or tax registration number.
+	 * @param string   $registration Company registration number, where the
+	 *                               law of the seller's country wants it on
+	 *                               business documents (since 1.2.0).
 	 */
 	public function __construct(
 		public string $name,
 		public array $address = array(),
 		public string $email = '',
 		public string $tax_id = '',
+		public string $registration = '',
 	) {}
 
 	/**
@@ -54,6 +58,10 @@ final readonly class Party {
 
 		if ( '' !== $this->tax_id ) {
 			$lines[] = $translator->translate( 'vat', 'VAT' ) . ' ' . $this->tax_id;
+		}
+
+		if ( '' !== $this->registration ) {
+			$lines[] = $translator->translate( 'registration', 'Company no.' ) . ' ' . $this->registration;
 		}
 
 		return array_values( array_filter( $lines, static fn( $line ): bool => '' !== trim( (string) $line ) ) );

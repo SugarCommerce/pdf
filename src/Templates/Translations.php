@@ -111,6 +111,18 @@ final class Translations implements Translator {
 	}
 
 	/**
+	 * The built-in language this falls back to, which is the language the
+	 * document is in when the callback has no phrase of its own.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @return Language|null Null when the fallback is not a Language.
+	 */
+	public function language(): ?Language {
+		return $this->fallback instanceof Language ? $this->fallback : null;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	#[\Override]
