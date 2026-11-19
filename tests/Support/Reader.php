@@ -97,7 +97,15 @@ final class Reader {
 	 * @return array{0: int, 1: string} Exit code and output.
 	 */
 	public static function run( string $tool, array $args, string $bytes, array $after = array() ): array {
-		$file = tempnam( sys_get_temp_dir(), 'pdf-test-' );
+		// Inside the package, not the system's temporary folder: Ubuntu's
+		// qpdf runs under an AppArmor profile that may not open /tmp.
+		$folder = dirname( __DIR__ ) . '/.tmp';
+
+		if ( ! is_dir( $folder ) ) {
+			mkdir( $folder, 0777, true );
+		}
+
+		$file = (string) tempnam( $folder, 'pdf-test-' );
 		file_put_contents( $file, $bytes );
 
 		$command = escapeshellarg( $tool );
