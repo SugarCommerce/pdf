@@ -12,8 +12,12 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Templates;
 
+use SugarCommerce\Pdf\Align;
 use SugarCommerce\Pdf\Color;
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Fit;
 use SugarCommerce\Pdf\FontFamily;
+use SugarCommerce\Pdf\Image;
 
 /**
  * Class Branding
@@ -30,25 +34,30 @@ final readonly class Branding {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string             $name      Trading name, printed as the wordmark.
-	 * @param string             $tagline   Optional line under the name.
-	 * @param string             $accent    Brand colour as hex. Black by default:
-	 *                                      a monochrome invoice is harder to date,
-	 *                                      prints correctly on any device, stays
-	 *                                      legible when photocopied or faxed to an
-	 *                                      accounts department, and never clashes
-	 *                                      with whatever the recipient's own
-	 *                                      paperwork looks like.
-	 * @param string|null        $logo_path SVG `d` attribute for a vector mark.
-	 * @param float              $logo_box  viewBox height of that path.
-	 * @param array<int, string> $address   Your address, one line per element.
-	 * @param array<int, string> $footnotes Small print for the page foot.
-	 * @param FontFamily|null    $typeface  The family every document is set in
-	 *                                      (since 1.3.0): your brand's face, or
-	 *                                      {@see FontFamily::noto_sans()}. Null
-	 *                                      sets them in Helvetica, the smallest
-	 *                                      file, with Noto Sans drawing only the
-	 *                                      words Helvetica cannot.
+	 * @param string             $name       Trading name, printed as the wordmark.
+	 * @param string             $tagline    Optional line under the name.
+	 * @param string             $accent     Brand colour as hex. Black by default:
+	 *                                       a monochrome invoice is harder to date,
+	 *                                       prints correctly on any device, stays
+	 *                                       legible when photocopied or faxed to an
+	 *                                       accounts department, and never clashes
+	 *                                       with whatever the recipient's own
+	 *                                       paperwork looks like.
+	 * @param string|null        $logo_path  SVG `d` attribute for a vector mark.
+	 * @param float              $logo_box   viewBox height of that path.
+	 * @param array<int, string> $address    Your address, one line per element.
+	 * @param array<int, string> $footnotes  Small print for the page foot.
+	 * @param FontFamily|null    $typeface   The family every document is set in
+	 *                                       (since 1.3.0): your brand's face, or
+	 *                                       {@see FontFamily::noto_sans()}. Null
+	 *                                       sets them in Helvetica, the smallest
+	 *                                       file, with Noto Sans drawing only the
+	 *                                       words Helvetica cannot.
+	 * @param Image|string|null  $logo_image A JPEG or PNG logo (since 1.4.0): its
+	 *                                       path, or an {@see Image} already read.
+	 *                                       Drawn in place of `logo_path`, which
+	 *                                       stays as the mark when the image
+	 *                                       cannot be read.
 	 */
 	public function __construct(
 		public string $name,
@@ -59,7 +68,51 @@ final readonly class Branding {
 		public array $address = array(),
 		public array $footnotes = array(),
 		public ?FontFamily $typeface = null,
+		public Image|string|null $logo_image = null,
 	) {}
+
+	/**
+	 * Draw the logo at the top left of a masthead, and say how wide it came out.
+	 *
+	 * The mark sits in a band `$size` points tall, its top at `$top`. A
+	 * vector path is drawn `$size` square, as it always has been. An image
+	 * keeps its proportions: as tall as the band, and as wide as that makes
+	 * it up to four times the band, beyond which a very wide logo is drawn
+	 * shorter, centred in the band, rather than across the title.
+	 *
+	 * An image that cannot be read falls back to the vector path, if there
+	 * is one, and is listed by the document's
+	 * {@see Document::image_warnings()} either way.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param Document $pdf   Target.
+	 * @param float    $x     Left edge.
+	 * @param float    $top   Top of the band.
+	 * @param float    $size  Height of the band.
+	 * @param Color    $color Colour of a vector mark.
+	 *
+	 * @return float The width the mark takes, without a gap; 0 for none.
+	 */
+	public function logo( Document $pdf, float $x, float $top, float $size, Color $color ): float {
+		$image = null !== $this->logo_image ? $pdf->load_image( $this->logo_image ) : null;
+
+		if ( null !== $image ) {
+			$width = $image->fitted( $size * 4, $size )[0];
+
+			$pdf->image( $image, $x, $top - $size, $width, $size, Fit::Contain, Align::Left );
+
+			return $width;
+		}
+
+		if ( null === $this->logo_path ) {
+			return 0.0;
+		}
+
+		$pdf->svg_path( $this->logo_path, $x, $top - $size, $size / $this->logo_box, $color, $this->logo_box );
+
+		return $size;
+	}
 
 	/**
 	 * The seller as a document prints them.

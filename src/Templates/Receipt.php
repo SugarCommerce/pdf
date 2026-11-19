@@ -81,11 +81,8 @@ final readonly class Receipt {
 
 		$top = $pdf->height() - 40;
 
-		if ( null !== $brand->logo_path ) {
-			$pdf->svg_path( $brand->logo_path, $pdf->left(), $top - 26, 26 / $brand->logo_box, $brand->ink(), $brand->logo_box );
-		}
-
-		$x = null !== $brand->logo_path ? $pdf->left() + 36 : $pdf->left();
+		$mark = $brand->logo( $pdf, $pdf->left(), $top, 26, $brand->ink() );
+		$x    = $pdf->left() + ( $mark > 0 ? $mark + 10 : 0 );
 
 		$pdf->text_at( strtoupper( $brand->name ), $x, $top - 12, 12, Font::HelveticaBold, $brand->ink() );
 		$pdf->text_at( $this->translator->translate( 'receipt', 'RECEIPT' ), $pdf->left(), $top - 12, 15, Font::HelveticaBold, $brand->ink(), Align::Right, $pdf->content_width() );

@@ -46,6 +46,8 @@ final class Fixtures {
 			'statement'        => self::statement(),
 			'international'    => self::international(),
 			'typeface'         => self::typeface(),
+			'logo'             => self::invoice( self::branding( Pictures::path( 'logo.png' ) ) ),
+			'receipt-logo'     => self::receipt( self::branding( Pictures::path( 'photo.jpg' ) ) ),
 		);
 	}
 
@@ -91,15 +93,19 @@ final class Fixtures {
 	/**
 	 * The branding every fixture shares.
 	 *
+	 * @param string|null $logo A JPEG or PNG logo to draw in place of the
+	 *                          vector mark.
+	 *
 	 * @return Branding
 	 */
-	public static function branding(): Branding {
+	public static function branding( ?string $logo = null ): Branding {
 		return new Branding(
 			'Northwind Audio',
 			'Sample packs and presets',
 			logo_path: 'M10,0 L70,0 Q80,0 80,10 L80,60 Q80,70 70,70 L10,70 Q0,70 0,60 L0,10 Q0,0 10,0 Z',
 			logo_box: 70,
 			footnotes: array( 'Northwind Audio Ltd is registered in Ireland, company number 654321.' ),
+			logo_image: $logo,
 		);
 	}
 
@@ -107,9 +113,11 @@ final class Fixtures {
 	 * A standard-rated invoice worked out from minor units, with a
 	 * discount and a stamp.
 	 *
+	 * @param Branding|null $branding A branding other than the shared one.
+	 *
 	 * @return Invoice
 	 */
-	public static function invoice(): Invoice {
+	public static function invoice( ?Branding $branding = null ): Invoice {
 		$totals = new Totals(
 			lines: array(
 				new TotalsLine( 'Drum Kit Vol. 2 — studio licence', 14900, note: 'Licence period: 18 November 2026 to 17 November 2027' ),
@@ -122,7 +130,7 @@ final class Fixtures {
 		);
 
 		return new Invoice(
-			branding: self::branding(),
+			branding: $branding ?? self::branding(),
 			number: 'INV-2026-0042',
 			from: self::seller(),
 			to: new Party( 'Ada Lovelace', array( '4 Marine Parade', 'Brighton BN2 1TL', 'United Kingdom' ), email: 'ada@example.com' ),
@@ -326,11 +334,13 @@ final class Fixtures {
 	/**
 	 * An A5 receipt that names who was paid.
 	 *
+	 * @param Branding|null $branding A branding other than the shared one.
+	 *
 	 * @return Receipt
 	 */
-	public static function receipt(): Receipt {
+	public static function receipt( ?Branding $branding = null ): Receipt {
 		return new Receipt(
-			branding: self::branding(),
+			branding: $branding ?? self::branding(),
 			number: 'R-2026-0042',
 			to: new Party( 'Ada Lovelace', array( 'ada@example.com' ) ),
 			items: array(

@@ -187,10 +187,8 @@ final readonly class Statement {
 		$top   = $pdf->height() - 48;
 		$x     = $pdf->left();
 
-		if ( null !== $brand->logo_path ) {
-			$pdf->svg_path( $brand->logo_path, $x, $top - 30, 30 / $brand->logo_box, $brand->ink(), $brand->logo_box );
-			$x += 42;
-		}
+		$mark = $brand->logo( $pdf, $x, $top, 30, $brand->ink() );
+		$x   += $mark > 0 ? $mark + 12 : 0;
 
 		$pdf->text_at( strtoupper( $brand->name ), $x, $top - 13, 13, Font::HelveticaBold, $brand->ink() );
 

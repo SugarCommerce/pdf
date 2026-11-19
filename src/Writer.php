@@ -33,7 +33,8 @@ final readonly class Writer {
 	 * Objects are numbered as they are needed: the catalogue, the page
 	 * tree and the information dictionary first, then each font the pages
 	 * use — one object for a base-14 font, five for an embedded subset —
-	 * then each page and its content stream.
+	 * then each image — one, or two with a soft mask — then each page and
+	 * its content stream.
 	 *
 	 * Content streams are deflated (since 1.3.0). Text and drawing
 	 * operators compress to about a fifth, and zlib is in every PHP build.
@@ -55,10 +56,13 @@ final readonly class Writer {
 	 * @param array<string, Font|FontSubset> $fonts    Resource name => font, every
 	 *                                                 one the pages show text in
 	 *                                                 (since 1.3.0).
+	 * @param array<string, Image>           $images   Resource name => image, every
+	 *                                                 one the pages draw, once each
+	 *                                                 (since 1.4.0).
 	 *
 	 * @return string Raw PDF bytes.
 	 */
-	public static function write( array $pages, float $width, float $height, array $metadata = array(), string $language = '', array $fonts = array() ): string {
+	public static function write( array $pages, float $width, float $height, array $metadata = array(), string $language = '', array $fonts = array(), array $images = array() ): string {
 		$pages = array() === $pages ? array( '' ) : $pages;
 
 		$language   = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $language );
@@ -81,7 +85,19 @@ final readonly class Writer {
 			$next    += 5;
 		}
 
-		$resources = '/Resources <</Font <<' . implode( ' ', $resources ) . '>>>> ';
+		// Images after the fonts: one object each, and a second for the
+		// soft mask of one with transparency.
+		$xobjects = array();
+
+		foreach ( $images as $resource => $image ) {
+			$xobjects[] = '/' . $resource . ' ' . $next . ' 0 R';
+			$parts      = $image->objects( $next );
+			$objects   += $parts;
+			$next      += count( $parts );
+		}
+
+		$resources = '/Resources <</Font <<' . implode( ' ', $resources ) . '>>'
+			. ( array() !== $xobjects ? ' /XObject <<' . implode( ' ', $xobjects ) . '>>' : '' ) . '>> ';
 		$page_refs = array();
 
 		foreach ( $pages as $stream ) {

@@ -393,10 +393,8 @@ final readonly class Invoice {
 		$top   = $pdf->height() - 48;
 		$x     = $pdf->left();
 
-		if ( null !== $brand->logo_path ) {
-			$pdf->svg_path( $brand->logo_path, $x, $top - 34, 34 / $brand->logo_box, $brand->accent_color(), $brand->logo_box );
-			$x += 46;
-		}
+		$mark = $brand->logo( $pdf, $x, $top, 34, $brand->accent_color() );
+		$x   += $mark > 0 ? $mark + 12 : 0;
 
 		$pdf->text_at( strtoupper( $brand->name ), $x, $top - 14, 15, Font::HelveticaBold, $brand->accent_color() );
 

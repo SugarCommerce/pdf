@@ -14,7 +14,7 @@ sale, a statement of account. The usual answers are shelling out to
 render a document that never needed to leave the server.
 
 This writes the PDF itself. It covers what a business document needs — text
-that flows across pages, tables, rules, a vector logo, the VAT wording an EU
+that flows across pages, tables, rules, your logo, the VAT wording an EU
 invoice is invalid without — and it fills in invoice, receipt and statement
 templates from plain values. Inside WordPress it speaks the site's language
 and sends the download; outside it, it still works.
@@ -29,7 +29,8 @@ and sends the download; outside it, it still works.
 * Ask an invoice what it is missing before you issue it — and ask the drawn page whether it actually got printed
 * Long descriptions, notes and payment terms wrap; tables run on over pages with their header; totals never split from their total
 * Lay out your own document: paragraphs that break across pages, tables whose header repeats on every page, footers
-* Draw a logo from an SVG path, sharp at any zoom and a few hundred bytes
+* Put your logo on every document as a PNG or JPEG — transparency kept, turned the right way up, embedded once however many pages it is on — or as an SVG path, sharp at any zoom and a few hundred bytes
+* Know when a picture did not make it: a damaged, oversized or unsupported file is refused with the reason, never left out unsaid
 * Write the templates in the site's language, or through your plugin's own translations
 * Send a PDF to the browser with a safe file name and headers no cache will keep
 * Put a customer's name anywhere without it breaking out of the document
@@ -342,6 +343,92 @@ GPL included — the font stays under the OFL as a separate work in the same
 package, the way WordPress's own default themes ship OFL fonts — and it places
 no condition on documents that embed it.
 
+## Logos and pictures
+
+Give the branding a PNG or JPEG and every invoice, receipt and statement
+carries it at the top left, with the wordmark beside it:
+
+```php
+$brand = new Branding( 'Northwind Audio', logo_image: __DIR__ . '/assets/logo.png' );
+```
+
+The logo is as tall as the masthead's band — 34 points on an invoice, 30 on a
+statement, 26 on a receipt — and as wide as its proportions make it, up to
+four times the band; a wider one is drawn shorter, centred in the band, rather
+than run into the title. A file that cannot be read falls back to `logo_path`,
+the SVG path, when there is one. `logo_image` also takes an `Image` already
+read, for a logo used on thousands of documents in one request.
+
+On a document of your own:
+
+```php
+use SugarCommerce\Pdf\{Align, Document, Fit, Image};
+
+$pdf  = new Document();
+$logo = Image::file( __DIR__ . '/assets/logo.png' ); // read and checked once
+
+$pdf->image( $logo, $pdf->left(), $pdf->height() - 90, 120, 40 );                       // whole, in proportion, centred in the box
+$pdf->image( $logo, $pdf->left(), 700, 120, 40, Fit::Contain, Align::Left );           // ...against the box's left edge
+$pdf->image( __DIR__ . '/team.jpg', 300, 500, 200, 200, Fit::Cover );                  // covering the box, cut off at its edges
+$pdf->image( __DIR__ . '/signature.png', 56, 120, 160, 50, Fit::Fill );                 // stretched to the box exactly
+
+[ $width, $height ] = $logo->fitted( 120, 40 ); // the size Fit::Contain will draw, to lay out around it
+$logo->width;  $logo->height;  $logo->aspect_ratio();
+```
+
+The box is given by its bottom-left corner, as everything on a PDF page is.
+The same picture drawn again — on every page, from a footer, or read from the
+same file twice — is embedded once.
+
+**What it reads.** JPEG is passed through as it is, because a PDF reader
+decodes JPEG itself: baseline and progressive, greyscale, colour and CMYK
+(Photoshop's inverted CMYK is turned back with a `/Decode` array). An EXIF
+orientation turns the picture the way a photo viewer would, so a photo taken
+on its side is not printed on its side. EXIF, the camera's thumbnail, ICC
+profiles and comments are left out of the file — where a photograph was taken
+has no business on an invoice — and anything after the end of the image goes
+too.
+
+PNG is read in PHP. An opaque greyscale, colour or palette PNG of up to eight
+bits goes in as its own compressed rows, which a PDF reads with the PNG
+predictor — no decoding, only a check that the data is whole. Transparency
+(an alpha channel, or a `tRNS` colour or palette entries), sixteen-bit samples
+and interlacing are decoded: alpha becomes a soft mask, sixteen bits come down
+to eight, and a palette stays a palette. GD and Imagick are not used: neither
+is on every host, so the PHP decoder would be needed anyway, and with two
+paths the one the tests prove would not be the one every server runs — GD
+also rounds alpha to seven bits and turns palettes into true colour, and its
+output depends on the libpng and zlib it was built with.
+
+SVG files are not read. A logo drawn as paths goes in as its path data, the
+`d` of each `<path>`, through `logo_path` or `svg_path()` — which is what the
+Swift writer this ports does too.
+
+**What it refuses.** Every refusal says why and what to do, so nothing goes
+missing unsaid: a damaged or cut-short file (a failed checksum, image data
+that ends early, a row filter PNG does not have), GIF, WebP, HEIC, TIFF and
+BMP by name, JPEGs no reader decodes (lossless, arithmetic-coded,
+hierarchical, twelve-bit), and anything too large — over 32 MB
+(`Image::MAX_BYTES`), over 50 megapixels (`Image::MAX_PIXELS`), or, for a PNG
+that has to be decoded, over 4 megapixels (`Image::MAX_DECODED_PIXELS`, about
+half a second and 60 MB to decode). A deflate bomb is stopped as soon as it
+passes the size the image can be, without inflating the rest. `Image::file()`
+and `new Image( $bytes, 'logo.png' )` throw an `InvalidArgumentException`;
+`image()` given a path records the reason instead and returns `false`, as does
+a box with no size. A picture placed partly off the page is drawn and
+reported, since the reader cuts it off. Ask the document:
+
+```php
+$pdf = $invoice->render();
+
+foreach ( $pdf->image_warnings() as $warning ) { // footers included
+	error_log( $warning ); // "logo.png is cut short: its image data ends before its last row."
+}
+```
+
+`load_image( $path )` reads a picture the same way — an `Image`, or null and a
+warning — for laying out around it before drawing.
+
 ## A document of your own
 
 ```php
@@ -380,7 +467,8 @@ bottom, and `block_height()`, `lines()`, `width()` and `fit()` measure first.
 the flow. A wrapped table row grows to its tallest cell and is never split
 across two pages unless it is taller than a page, when it continues line by line
 under the repeated header. `svg_path()` draws the `d` of an SVG `<path>` — a
-logo — and draws nothing for a value that is not one. `drawn_text()` lists every
+logo — and draws nothing for a value that is not one; `image()` draws a PNG or
+JPEG (see [Logos and pictures](#logos-and-pictures)). `drawn_text()` lists every
 run of text drawn, footers included, as a reader will extract it. Pass
 `'CreationDate' => $timestamp` and the same document renders to the same bytes,
 for a snapshot test; `Invoice::save( $path, [ 'CreationDate' => … ] )` passes it
@@ -404,18 +492,31 @@ composer test                  # PHPUnit, with smalot/pdfparser reading every pa
 UPDATE_GOLDEN=1 composer test  # after a deliberate change: rewrite the golden files, then read the diff
 ```
 
-`tests/golden/` holds twelve documents — an invoice, a reverse charge with a
+`tests/golden/` holds fourteen documents — an invoice, a reverse charge with a
 SEPA code, a credit note, a proforma, a delivery note, mixed rates, a
 three-page invoice, a French intra-community supply, a receipt, a statement,
-an invoice in Cyrillic, Greek and Polish, and one set in Noto Sans — as PDFs
+an invoice in Cyrillic, Greek and Polish, one set in Noto Sans, an invoice
+with a transparent PNG logo and a receipt with a JPEG one — as PDFs
 and as `pdftotext -layout` reads them. They double as a gallery. A PDF is
 compared with every stream inflated, so every object, operator and font byte
 counts but two zlib builds deflating alike does not. With poppler and qpdf
 installed (`brew install poppler qpdf`; CI installs `poppler-utils` and
 `qpdf`) the suite also runs `qpdf --check` on each, checks with `pdffonts`
 that every font is a base font or an embedded subset, and reads the Cyrillic,
-Greek, Polish, `€` and `£` back through both poppler and smalot; without the
-tools those tests are skipped, except in CI, where they fail.
+Greek, Polish, `€` and `£` back through both poppler and smalot, and lists
+every picture with `pdfimages -list`; without the tools those tests are
+skipped, except in CI, where they fail.
+
+The image readers are tested against PNGs the suite builds to order — every
+colour type at every bit depth, each row filter, interlaced and not, palette
+and colour-key transparency — whose pixels are compared three ways: with what
+was built, with what poppler's `pdfimages` decodes from the finished PDF, and
+(where GD is installed) with what libpng reads from the file. Each EXIF
+orientation is rendered by `pdftoppm` and checked against the specification's
+own description of it; so is a CMYK JPEG's colour. Damaged, truncated,
+oversized and hostile files — a deflate bomb among them — are each refused with
+their reason. The decoder, the placement and the embedding were mutation-checked:
+every change that alters a result fails the suite.
 
 The TrueType reader and subsetter are tested against fonts the suite builds to
 order — format 4 and 12 maps, short and long `loca`, composites of composites
@@ -424,7 +525,7 @@ Noto Sans.
 
 ## What it does not do
 
-* No images other than vector paths and QR codes — no JPEG or PNG yet
+* No GIF, WebP, HEIC or TIFF, and no SVG files — PNG and JPEG, plus SVG path data (see [Logos and pictures](#logos-and-pictures))
 * No right-to-left or shaped scripts — Arabic, Hebrew, the Indic scripts — and no kerning or ligatures (see [Fonts](#fonts)); mPDF does those
 * No PDF/A or Factur-X / ZUGFeRD e-invoices yet
 * No HTML or CSS

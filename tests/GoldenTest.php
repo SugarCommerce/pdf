@@ -100,6 +100,32 @@ final class GoldenTest extends TestCase {
 	}
 
 	/**
+	 * Every picture as poppler lists it: the logo where there is one, its
+	 * mask with it, and nothing on the documents drawn only in vectors.
+	 */
+	#[DataProvider( 'fixtures' )]
+	public function test_pdfimages_lists_each_picture_once( string $name ): void {
+		$rows = array_map(
+			static fn( array $row ): string => implode( ' ', array( $row['page'], $row['type'], $row['width'], $row['height'], $row['color'], $row['comp'], $row['bpc'], $row['enc'] ) ),
+			Reader::image_list( Fixtures::bytes( Fixtures::all()[ $name ] ) )
+		);
+
+		$expected = match ( $name ) {
+			'logo'         => array( '1 image 180 60 rgb 3 8 image', '1 smask 180 60 gray 1 8 image' ),
+			'receipt-logo' => array( '1 image 120 80 rgb 3 8 jpeg' ),
+			default        => array(),
+		};
+
+		$this->assertSame( $expected, $rows );
+	}
+
+	public function test_a_fixture_logo_reaches_the_page_with_nothing_to_report(): void {
+		foreach ( array( 'logo', 'receipt-logo' ) as $name ) {
+			$this->assertSame( array(), Fixtures::document( Fixtures::all()[ $name ] )->image_warnings(), $name );
+		}
+	}
+
+	/**
 	 * Which fixtures embed: the ones whose words Helvetica cannot print,
 	 * and the one set in the family. The rest stay a few kilobytes.
 	 */

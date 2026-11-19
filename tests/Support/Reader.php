@@ -334,6 +334,164 @@ final class Reader {
 	}
 
 	/**
+	 * `pdfimages -list`, one row per image or mask, as columns.
+	 *
+	 * @param string $bytes A PDF.
+	 *
+	 * @return list<array{page: int, type: string, width: int, height: int, color: string, comp: int, bpc: int, enc: string, object: int}>
+	 */
+	public static function image_list( string $bytes ): array {
+		[ $code, $output ] = self::run( self::tool( 'pdfimages' ), array( '-list' ), $bytes );
+
+		Assert::assertSame( 0, $code, $output );
+
+		$rows = array();
+
+		foreach ( array_slice( explode( "\n", trim( $output ) ), 2 ) as $line ) {
+			$cells  = preg_split( '/\s+/', trim( $line ) ) ?: array();
+			$rows[] = array(
+				'page'   => (int) $cells[0],
+				'type'   => $cells[2],
+				'width'  => (int) $cells[3],
+				'height' => (int) $cells[4],
+				'color'  => $cells[5],
+				'comp'   => (int) $cells[6],
+				'bpc'    => (int) $cells[7],
+				'enc'    => $cells[8],
+				'object' => (int) $cells[10],
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Every image and mask in a PDF as poppler decodes it.
+	 *
+	 * `pdfimages` without options writes each one as a PNM — colour as
+	 * eight-bit RGB, a palette looked up, greyscale and masks as grey —
+	 * which is as plain as an image file gets, so poppler's decoding can
+	 * be compared with the pixels a test built.
+	 *
+	 * @param string $bytes A PDF.
+	 *
+	 * @return list<array{width: int, height: int, channels: int, samples: string}>
+	 */
+	public static function extracted_images( string $bytes ): array {
+		$tool              = self::tool( 'pdfimages' );
+		$folder            = self::scratch();
+		[ $code, $output ] = self::run( $tool, array(), $bytes, array( $folder . '/image' ) );
+
+		Assert::assertSame( 0, $code, $output );
+
+		$files = glob( $folder . '/image-*' ) ?: array();
+		sort( $files );
+
+		$images = array_map( static fn( string $file ): array => self::pnm( (string) file_get_contents( $file ) ), $files );
+
+		array_map( 'unlink', $files );
+		rmdir( $folder );
+
+		return $images;
+	}
+
+	/**
+	 * The first page rendered by poppler at 72 dots an inch — a pixel a
+	 * point — as RGB.
+	 *
+	 * @param string $bytes A PDF.
+	 *
+	 * @return array{width: int, height: int, channels: int, samples: string}
+	 */
+	public static function rendered( string $bytes ): array {
+		$tool              = self::tool( 'pdftoppm' );
+		$folder            = self::scratch();
+		[ $code, $output ] = self::run( $tool, array( '-r', '72', '-singlefile', '-f', '1', '-l', '1' ), $bytes, array( $folder . '/page' ) );
+
+		Assert::assertSame( 0, $code, $output );
+
+		$page = self::pnm( (string) file_get_contents( $folder . '/page.ppm' ) );
+
+		unlink( $folder . '/page.ppm' );
+		rmdir( $folder );
+
+		return $page;
+	}
+
+	/**
+	 * One pixel of a decoded image, as its channel values.
+	 *
+	 * @param array{width: int, height: int, channels: int, samples: string} $image From pnm().
+	 * @param int                                                            $x     Column.
+	 * @param int                                                            $y     Row, from the top.
+	 *
+	 * @return list<int>
+	 */
+	public static function pixel( array $image, int $x, int $y ): array {
+		$offset = ( ( $y * $image['width'] ) + $x ) * $image['channels'];
+
+		return array_values( (array) unpack( 'C*', substr( $image['samples'], $offset, $image['channels'] ) ) );
+	}
+
+	/**
+	 * Read a binary PBM, PGM or PPM.
+	 *
+	 * @param string $data The file.
+	 *
+	 * @return array{width: int, height: int, channels: int, samples: string}
+	 *         Eight bits a sample; a bitmap's black is 0.
+	 */
+	public static function pnm( string $data ): array {
+		Assert::assertSame( 1, preg_match( '/^P([456])\s/', $data, $kind ), 'not a binary PNM' );
+
+		if ( '4' !== $kind[1] ) {
+			Assert::assertSame( 1, preg_match( '/^P[56]\s+(\d+)\s+(\d+)\s+255\s/', $data, $header ), 'not an eight-bit PNM' );
+
+			return array(
+				'width'    => (int) $header[1],
+				'height'   => (int) $header[2],
+				'channels' => '6' === $kind[1] ? 3 : 1,
+				'samples'  => substr( $data, strlen( $header[0] ) ),
+			);
+		}
+
+		// A bitmap: no maximum, eight pixels a byte, and 1 is black.
+		Assert::assertSame( 1, preg_match( '/^P4\s+(\d+)\s+(\d+)\s/', $data, $header ) );
+
+		$width   = (int) $header[1];
+		$height  = (int) $header[2];
+		$bits    = substr( $data, strlen( $header[0] ) );
+		$row     = intdiv( $width + 7, 8 );
+		$samples = '';
+
+		for ( $y = 0; $y < $height; $y++ ) {
+			for ( $x = 0; $x < $width; $x++ ) {
+				$samples .= ( ( ord( $bits[ ( $y * $row ) + intdiv( $x, 8 ) ] ) >> ( 7 - ( $x % 8 ) ) ) & 1 ) ? "\x00" : "\xFF";
+			}
+		}
+
+		return array(
+			'width'    => $width,
+			'height'   => $height,
+			'channels' => 1,
+			'samples'  => $samples,
+		);
+	}
+
+	/**
+	 * A fresh folder inside the package for a tool to write into.
+	 *
+	 * @return string
+	 */
+	private static function scratch(): string {
+		$folder = dirname( __DIR__ ) . '/.tmp/' . bin2hex( random_bytes( 8 ) );
+
+		mkdir( $folder, 0777, true );
+
+		return $folder;
+	}
+
+	/**
 	 * Object numbers of the pages, in order.
 	 *
 	 * @param array<int, array{dict: string, stream: string|null}> $objects From objects().
