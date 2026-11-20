@@ -154,15 +154,20 @@ final class Archival {
 	}
 
 	/**
-	 * Text for an XML element.
+	 * Text for an XML element or attribute.
+	 *
+	 * Markup is escaped, bytes that are not UTF-8 become U+FFFD, and so
+	 * does any code point XML 1.0 does not allow -- the C0 controls, and
+	 * U+FFFE and U+FFFF, which are valid UTF-8 -- since one of them in a
+	 * name leaves a file no parser opens.
 	 *
 	 * @since 1.5.0
 	 *
-	 * @param string $text Clean UTF-8.
+	 * @param string $text UTF-8.
 	 *
 	 * @return string
 	 */
 	public static function escape( string $text ): string {
-		return htmlspecialchars( $text, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+		return htmlspecialchars( $text, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED, 'UTF-8' );
 	}
 }

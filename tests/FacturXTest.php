@@ -433,6 +433,25 @@ final class FacturXTest extends TestCase {
 	}
 
 	/**
+	 * U+FFFE and U+FFFF are valid UTF-8 but not characters XML 1.0 allows:
+	 * a buyer who typed one into their name made every e-invoice to them a
+	 * file no parser would open.
+	 */
+	public function test_a_non_character_cannot_make_the_xml_unreadable(): void {
+		$buyer    = new Party( "Smith\u{FFFF} \u{FFFE}Ltd", array( "a\u{FFFF}" ), tax_id: "DE1\u{FFFE}", country: 'DE', email: "b\u{FFFF}@example.com" );
+		$einvoice = self::einvoice( buyer: $buyer );
+		$dom      = new \DOMDocument();
+
+		libxml_use_internal_errors( true );
+		$loaded = $dom->loadXML( $einvoice[0]->factur_x_xml( $einvoice[1] ) );
+		libxml_clear_errors();
+		libxml_use_internal_errors( false );
+
+		$this->assertTrue( $loaded, 'The XML is well-formed.' );
+		$this->assertSame( "Smith\u{FFFD} \u{FFFD}Ltd", ( new \DOMXPath( $dom ) )->evaluate( 'string(//*[local-name()="BuyerTradeParty"]/*[local-name()="Name"])' ) );
+	}
+
+	/**
 	 * CII declares sequences: the first element out of place is a
 	 * rejection, so the order is pinned here as well as by the schema.
 	 */

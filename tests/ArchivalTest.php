@@ -124,6 +124,24 @@ final class ArchivalTest extends TestCase {
 		$this->assertSame( 'B', $xpath->evaluate( 'string(//pdfaid:conformance)' ) );
 	}
 
+	/**
+	 * A title with U+FFFF in it -- an order number, a customer's name --
+	 * left the XMP packet a file no XML parser opens, and so a PDF/A that
+	 * fails validation.
+	 */
+	public function test_a_non_character_cannot_make_the_xmp_unreadable(): void {
+		$packet = Archival::xmp( array( 'Title' => "Invoice\u{FFFF} for \u{FFFE}Ana" ), 0 );
+		$dom    = new \DOMDocument();
+
+		libxml_use_internal_errors( true );
+		$loaded = $dom->loadXML( $packet );
+		libxml_clear_errors();
+		libxml_use_internal_errors( false );
+
+		$this->assertTrue( $loaded, 'The XMP packet is well-formed.' );
+		$this->assertStringContainsString( "Invoice\u{FFFD} for \u{FFFD}Ana", $packet );
+	}
+
 	public function test_every_information_field_agrees_with_the_xmp_packet(): void {
 		$metadata = array(
 			'Title'    => "Invoice  INV-1 & <Łódź> \x01",
