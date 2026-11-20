@@ -34,6 +34,7 @@
     </rule>
 
     <file>src</file>
+    <file>data</file>
     <arg name="extensions" value="php"/>
     <arg name="basepath" value="."/>
     <arg name="colors"/>

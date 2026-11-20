@@ -3,6 +3,7 @@
     <description>Defect-hunting sniffs. Preferences live in phpcs-format.xml.dist.</description>
 
     <file>src</file>
+    <file>data</file>
 
     <arg name="extensions" value="php"/>
     <arg name="colors"/>
