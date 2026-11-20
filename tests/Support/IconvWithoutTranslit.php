@@ -2,15 +2,16 @@
 /**
  * An iconv with no //TRANSLIT, as on musl and Alpine.
  *
- * Declared in the library's namespace, so its unqualified iconv() calls
- * find this one first. Loaded only in a process of its own.
+ * Declared in the namespace of Document's Encoding trait, so its
+ * unqualified iconv() calls find this one first. Loaded only in a process
+ * of its own.
  *
  * @package SugarCommerce\Pdf
  */
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Traits\Document;
 
 /**
  * Refuse every //TRANSLIT conversion of anything but ASCII.

@@ -95,7 +95,7 @@ final class EncodingTest extends TestCase {
 	public function test_an_iconv_without_transliteration_changes_nothing(): void {
 		require_once __DIR__ . '/Support/IconvWithoutTranslit.php';
 
-		$this->assertFalse( \SugarCommerce\Pdf\iconv( 'UTF-8', 'Windows-1252//TRANSLIT', 'é' ) );
+		$this->assertFalse( \SugarCommerce\Pdf\Traits\Document\iconv( 'UTF-8', 'Windows-1252//TRANSLIT', 'é' ) );
 		$this->assertSame( bin2hex( self::CAFE ), bin2hex( Document::escape( 'Café £5 €5 Zoë' ) ) );
 		$this->assert_whole_range();
 
