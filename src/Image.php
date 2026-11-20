@@ -13,6 +13,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf;
 
 use SugarCommerce\Pdf\Images\{Jpeg, Png};
+use SugarCommerce\Pdf\Support\LocalFile;
 
 /**
  * Class Image
@@ -195,7 +196,9 @@ final class Image {
 	 *
 	 * @since 1.4.0
 	 *
-	 * @param string $path Path to a `.jpg`, `.jpeg` or `.png`.
+	 * @param string $path Path to a `.jpg`, `.jpeg` or `.png` on this server.
+	 *                     An address, or any other stream wrapper, is refused
+	 *                     (since 1.5.0).
 	 *
 	 * @return self
 	 *
@@ -207,24 +210,7 @@ final class Image {
 			return self::$loaded[ $path ];
 		}
 
-		$size = is_file( $path ) ? filesize( $path ) : false;
-
-		if ( false === $size ) {
-			throw new \InvalidArgumentException( 'Could not read the image file ' . $path . '.' );
-		}
-
-		// Measured before it is read: a file too large to embed should not
-		// be loaded into memory to find that out.
-		if ( $size > self::MAX_BYTES ) {
-			throw new \InvalidArgumentException( sprintf( '%s is %d bytes, more than the %d this reads. Save it smaller.', basename( $path ), $size, self::MAX_BYTES ) );
-		}
-
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- A local file; a failed read throws below, with the path.
-		$data = @file_get_contents( $path );
-
-		if ( false === $data ) {
-			throw new \InvalidArgumentException( 'Could not read the image file ' . $path . '.' );
-		}
+		$data = LocalFile::read( $path, self::MAX_BYTES, 'image', 'Save it smaller.' );
 
 		self::$loaded[ $path ] = new self( $data, basename( $path ) );
 

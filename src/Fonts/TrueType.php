@@ -12,6 +12,7 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Fonts;
 
+use SugarCommerce\Pdf\Support\LocalFile;
 use SugarCommerce\Pdf\Traits\TrueType\{Bytes, CharacterMap, Reading, Subsetting};
 
 /**
@@ -45,6 +46,15 @@ final class TrueType {
 	use CharacterMap;
 	use Subsetting;
 	use Bytes;
+
+	/**
+	 * The largest font file read, in bytes: 64 MB. A static face of every
+	 * European alphabet is under one; the largest single-file fonts in
+	 * use, with every CJK glyph, are about twenty.
+	 *
+	 * @since 1.5.0
+	 */
+	public const int MAX_BYTES = 67108864;
 
 	/**
 	 * The PostScript name, cleaned to what a PDF name may hold.
@@ -252,7 +262,9 @@ final class TrueType {
 	 *
 	 * @since 1.3.0
 	 *
-	 * @param string $path Path to a `.ttf`.
+	 * @param string $path Path to a `.ttf` on this server. An address, or any
+	 *                     other stream wrapper, is refused, and so is a file
+	 *                     over MAX_BYTES (since 1.5.0).
 	 *
 	 * @return self
 	 *
@@ -263,12 +275,7 @@ final class TrueType {
 			return self::$loaded[ $path ];
 		}
 
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A missing file throws below, with the path.
-		$data = is_file( $path ) ? @file_get_contents( $path ) : false;
-
-		if ( false === $data ) {
-			throw new \InvalidArgumentException( 'Could not read the font file ' . $path . '.' );
-		}
+		$data = LocalFile::read( $path, self::MAX_BYTES, 'font' );
 
 		self::$loaded[ $path ] = new self( $data, basename( $path ) );
 

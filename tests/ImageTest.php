@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\{Align, Document, Fit, Image};
 use SugarCommerce\Pdf\Templates\{Branding, Invoice, LineItem, Party, Receipt, Statement};
-use SugarCommerce\Pdf\Tests\Support\{Pictures, Reader};
+use SugarCommerce\Pdf\Tests\Support\{Pictures, ProbeWrapper, Reader};
 
 final class ImageTest extends TestCase {
 
@@ -101,6 +101,30 @@ final class ImageTest extends TestCase {
 		$this->expectExceptionMessage( 'Could not read the image file' );
 
 		Image::file( __DIR__ );
+	}
+
+	/**
+	 * Only a file on this server is read. A path is handed to PHP's file
+	 * functions, which follow any stream wrapper it names: ftp:// reaches
+	 * out to another host, phar:// opens an archive. Neither is touched.
+	 */
+	public function test_a_stream_wrapper_is_never_followed(): void {
+		ProbeWrapper::register( (string) file_get_contents( Pictures::path( 'logo.png' ) ) );
+
+		try {
+			foreach ( array( 'probe://example.com/logo.png', 'PROBE://example.com/logo.png', 'ftp://127.0.0.1:1/logo.png', 'phar://logo.phar/logo.png', "logo.png\0.php" ) as $path ) {
+				try {
+					Image::file( $path );
+					$this->fail( $path . ' was read.' );
+				} catch ( \InvalidArgumentException $error ) {
+					$this->assertStringStartsWith( 'Could not read the image file', $error->getMessage(), $path );
+				}
+			}
+
+			$this->assertSame( array(), ProbeWrapper::$touched );
+		} finally {
+			ProbeWrapper::unregister();
+		}
 	}
 
 	public function test_a_file_is_read_once_and_named_by_its_file_name(): void {

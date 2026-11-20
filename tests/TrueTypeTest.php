@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\FontFamily;
 use SugarCommerce\Pdf\Fonts\TrueType;
-use SugarCommerce\Pdf\Tests\Support\FontBuilder;
+use SugarCommerce\Pdf\Tests\Support\{FontBuilder, ProbeWrapper};
 
 final class TrueTypeTest extends TestCase {
 
@@ -366,6 +366,54 @@ final class TrueTypeTest extends TestCase {
 		$this->expectExceptionMessage( '/no/such/font.ttf' );
 
 		TrueType::file( '/no/such/font.ttf' );
+	}
+
+	/**
+	 * Only a file on this server is read, as for an image: no stream
+	 * wrapper is followed, ftp:// and phar:// among them.
+	 */
+	public function test_a_stream_wrapper_is_never_followed(): void {
+		ProbeWrapper::register( FontBuilder::font() );
+
+		try {
+			foreach ( array( 'probe://example.com/font.ttf', 'ftp://127.0.0.1:1/font.ttf', 'phar://fonts.phar/font.ttf' ) as $path ) {
+				try {
+					TrueType::file( $path );
+					$this->fail( $path . ' was read.' );
+				} catch ( \InvalidArgumentException $error ) {
+					$this->assertStringStartsWith( 'Could not read the font file', $error->getMessage(), $path );
+				}
+			}
+
+			$this->assertSame( array(), ProbeWrapper::$touched );
+		} finally {
+			ProbeWrapper::unregister();
+		}
+	}
+
+	/**
+	 * A font file is measured before it is read, as an image is: a path
+	 * to something enormous is refused without loading it into memory.
+	 */
+	public function test_a_file_too_large_to_be_a_font_is_not_read(): void {
+		$path = dirname( __DIR__ ) . '/tests/.tmp/huge.ttf';
+
+		if ( ! is_dir( dirname( $path ) ) ) {
+			mkdir( dirname( $path ), 0777, true );
+		}
+
+		$handle = fopen( $path, 'w' );
+		ftruncate( $handle, TrueType::MAX_BYTES + 1 );
+		fclose( $handle );
+
+		try {
+			TrueType::file( $path );
+			$this->fail( 'Expected a refusal.' );
+		} catch ( \InvalidArgumentException $error ) {
+			$this->assertSame( 'huge.ttf is 67108865 bytes, more than the 67108864 this reads.', $error->getMessage() );
+		} finally {
+			unlink( $path );
+		}
 	}
 
 	/**
