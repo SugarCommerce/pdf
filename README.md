@@ -265,8 +265,9 @@ text domain, and a phrase your translation files do not cover falls through
 to the built-in language — so a German site gets German invoices with no
 translation work. `new Translations( $callable )` wraps any other translator.
 
-The built-in wording is in these eleven. Customer names, addresses, items and
-your own wording can be in any European alphabet: see [Fonts](#fonts).
+The built-in wording is in these eleven, kept in `data/phrases.php`. Customer
+names, addresses, items and your own wording can be in any European alphabet:
+see [Fonts](#fonts).
 
 ## Fonts
 
@@ -655,21 +656,17 @@ composer test             # then runs them too
 
 For those, use a full library. This one is for documents you generate.
 
-## Moving from the SugarCommerce SaaS package
+## Security
 
-From the retired `sugarcommerce/text-pdf` (`SugarCommerce\TextPdf`). Everything
-not listed keeps its name and behaviour.
-
-| Old | New |
-|---|---|
-| `sugarcommerce/text-pdf` | `sugarcommerce/pdf` |
-| `SugarCommerce\TextPdf\*` | `SugarCommerce\Pdf\*` |
-| `SugarCommerce\TextPdf\Templates\*` | `SugarCommerce\Pdf\Templates\*` |
-| PHP 8.5 | PHP 8.3 — nothing in the code needed 8.4 or 8.5 |
-| `new Translations( fn ( $key, $default ) => __( $default, 'my-plugin' ) )` | `Translations::wordpress( 'my-plugin' )` — falls through to the site's built-in language as well |
-| `Language::from_locale( get_locale() )` | `Language::site()` |
-| headers written by hand to stream a PDF | `Download::send()` and `Download::headers()` |
-| `Color::hex()`'s own hex parsing | the same method, reading through `SugarCommerce\Text\Display\Color::rgb()` (sugarcommerce/text, the one colour helper) |
+* Text cannot break out of its PDF string: `(`, `)` and `\` are escaped, control characters dropped, and metadata that is not ASCII goes in as UTF-16 hex
+* A number that is not finite or is out of the format's range never reaches the content stream, and SVG path data that is prose draws nothing
+* A language tag is written only when it is a well-formed tag
+* A logo or a font is read only from a path on this server: no URL or stream wrapper (`ftp://`, `phar://`) is followed, and the file is measured before it is read (32 MB for a picture, 64 MB for a font)
+* A damaged or hostile PNG, JPEG or TrueType file is refused with its reason, never read past its end or looped over; a deflate bomb is stopped without inflating it, and a picture over 50 megapixels (4 decoded in PHP) is refused
+* The e-invoice XML and the XMP packet are escaped, and never carry a character XML forbids, U+FFFE and U+FFFF included
+* A payment code's fields are single lines and its IBAN and BIC are checked, so no value can add a line to the payment instructions
+* A download's file name loses line breaks, quotes and path separators, and an attachment's name loses its folders
+* Very long unbroken text wraps and truncates in linear time
 
 ## Requirements
 
