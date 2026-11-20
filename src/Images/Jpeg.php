@@ -40,12 +40,12 @@ final class Jpeg {
 	 * progressive Huffman. Progressive has been part of `/DCTDecode` since
 	 * PDF 1.3, and every current reader draws it.
 	 */
-	private const FRAMES = array( 0xC0, 0xC1, 0xC2 );
+	private const array FRAMES = array( 0xC0, 0xC1, 0xC2 );
 
 	/**
 	 * Frame markers that are JPEG but not what `/DCTDecode` decodes, and why.
 	 */
-	private const REFUSED = array(
+	private const array REFUSED = array(
 		0xC3 => 'is a lossless JPEG',
 		0xC5 => 'is a hierarchical JPEG',
 		0xC6 => 'is a hierarchical JPEG',

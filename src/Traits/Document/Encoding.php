@@ -72,7 +72,7 @@ trait Encoding {
 	 *
 	 * @since 1.0.0
 	 */
-	private const WINDOWS_1252 = array(
+	private const array WINDOWS_1252 = array(
 		0x20AC => "\x80", // €
 		0x201A => "\x82", // ‚
 		0x0192 => "\x83", // ƒ
@@ -107,7 +107,7 @@ trait Encoding {
 	 *
 	 * @since 1.0.0
 	 */
-	private const STAND_INS = array(
+	private const array STAND_INS = array(
 		0x0110 => 'D',   // Đ
 		0x0111 => 'd',   // đ
 		0x0126 => 'H',   // Ħ

@@ -53,12 +53,12 @@ final class Png {
 	/**
 	 * The eight bytes every PNG starts with.
 	 */
-	public const SIGNATURE = "\x89PNG\r\n\x1A\n";
+	public const string SIGNATURE = "\x89PNG\r\n\x1A\n";
 
 	/**
 	 * The seven passes of Adam7: first column, first row, column step, row step.
 	 */
-	private const ADAM7 = array(
+	private const array ADAM7 = array(
 		array( 0, 0, 8, 8 ),
 		array( 4, 0, 8, 8 ),
 		array( 0, 4, 4, 8 ),
@@ -71,7 +71,7 @@ final class Png {
 	/**
 	 * Samples a pixel has, by colour type.
 	 */
-	private const CHANNELS = array(
+	private const array CHANNELS = array(
 		0 => 1,
 		2 => 3,
 		3 => 1,
@@ -82,7 +82,7 @@ final class Png {
 	/**
 	 * Bit depths each colour type allows.
 	 */
-	private const DEPTHS = array(
+	private const array DEPTHS = array(
 		0 => array( 1, 2, 4, 8, 16 ),
 		2 => array( 8, 16 ),
 		3 => array( 1, 2, 4, 8 ),
@@ -95,7 +95,7 @@ final class Png {
 	 * a thousand to one, so a piece never inflates past a few megabytes,
 	 * however the stream was made.
 	 */
-	private const PIECE = 4096;
+	private const int PIECE = 4096;
 
 	/**
 	 * Read a PNG.

@@ -33,7 +33,7 @@ final class Archival {
 	 * What the file says produced it, in the information dictionary and
 	 * the XMP packet alike.
 	 */
-	public const PRODUCER = 'sugarcommerce/pdf';
+	public const string PRODUCER = 'sugarcommerce/pdf';
 
 	/**
 	 * The ICC profile, relative to the package.
@@ -42,7 +42,7 @@ final class Archival {
 	 * under CC0 1.0 (`icc/LICENSE.txt`): a version 2 profile of sRGB in
 	 * 456 bytes, where the usual one is 3 KB.
 	 */
-	public const PROFILE = 'icc/sRGB-v2-micro.icc';
+	public const string PROFILE = 'icc/sRGB-v2-micro.icc';
 
 	/**
 	 * The sRGB profile the output intent carries.

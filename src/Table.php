@@ -81,7 +81,7 @@ final class Table {
 	/**
 	 * Padding either side of a cell's text.
 	 */
-	private const PADDING = 6.0;
+	private const float PADDING = 6.0;
 
 	/**
 	 * Start a table with optional column headings.

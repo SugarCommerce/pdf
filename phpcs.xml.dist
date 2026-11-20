@@ -18,6 +18,9 @@
              function. Align, Font, Language and the other enums here, so this fires on every
              method they have and finds nothing real. -->
         <exclude name="PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext"/>
+        <!-- It reads the type of a typed constant in a trait (PHP 8.3's
+             `const array WINDOWS_1252`) as a constant named `array`. -->
+        <exclude name="PHPCompatibility.Keywords.ForbiddenNames.arrayFound"/>
     </rule>
 
     <rule ref="WordPress.Security">

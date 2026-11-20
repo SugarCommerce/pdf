@@ -39,13 +39,13 @@ final class Image {
 	/**
 	 * The largest file read, in bytes: 32 MB.
 	 */
-	public const MAX_BYTES = 33554432;
+	public const int MAX_BYTES = 33554432;
 
 	/**
 	 * The most pixels embedded: 50 megapixels, a large camera's photograph.
 	 * More gains nothing on paper and makes every reader slow to open it.
 	 */
-	public const MAX_PIXELS = 50000000;
+	public const int MAX_PIXELS = 50000000;
 
 	/**
 	 * The most pixels decoded in PHP: four megapixels, 2048 × 2048.
@@ -55,13 +55,13 @@ final class Image {
 	 * memory and time decoding takes on a modest host. A logo or signature
 	 * is far smaller.
 	 */
-	public const MAX_DECODED_PIXELS = 4194304;
+	public const int MAX_DECODED_PIXELS = 4194304;
 
 	/**
 	 * How each EXIF orientation maps the image's unit square onto the
 	 * unit square it is drawn in, as the six numbers of a PDF matrix.
 	 */
-	private const ORIENTATIONS = array(
+	private const array ORIENTATIONS = array(
 		1 => array( 1, 0, 0, 1, 0, 0 ),
 		2 => array( -1, 0, 0, 1, 1, 0 ),
 		3 => array( -1, 0, 0, -1, 1, 1 ),

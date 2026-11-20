@@ -41,12 +41,12 @@ final class FacturXWriter {
 	/**
 	 * The file name Factur-X requires, exactly.
 	 */
-	public const FILE_NAME = 'factur-x.xml';
+	public const string FILE_NAME = 'factur-x.xml';
 
 	/**
 	 * Unit of measure for a quantity: UN/ECE Recommendation 20's "one".
 	 */
-	private const UNIT = 'C62';
+	private const string UNIT = 'C62';
 
 	/**
 	 * The invoice as Factur-X XML.
