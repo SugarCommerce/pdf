@@ -12,7 +12,9 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\{Align, Color, Font};
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
 
 /**
  * A line in the flow, in a box, in a band or at a point; columns; a

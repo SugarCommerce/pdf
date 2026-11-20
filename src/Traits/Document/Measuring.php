@@ -12,7 +12,7 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\Font;
+use SugarCommerce\Pdf\Models\Font;
 
 /**
  * Widths, wrapping and fitting, in whichever face will draw each word.

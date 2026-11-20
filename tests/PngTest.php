@@ -13,8 +13,10 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Document, Fit, Image};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Image;
 use SugarCommerce\Pdf\Images\Png;
+use SugarCommerce\Pdf\Models\Fit;
 use SugarCommerce\Pdf\Tests\Support\{Pictures, Reader};
 
 final class PngTest extends TestCase {

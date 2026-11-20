@@ -14,11 +14,11 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\Align;
-use SugarCommerce\Pdf\Color;
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\Font;
 use SugarCommerce\Pdf\Images\Svg;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
 use SugarCommerce\Pdf\Tests\Support\Reader;
 
 /**

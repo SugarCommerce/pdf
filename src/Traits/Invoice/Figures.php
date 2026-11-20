@@ -12,8 +12,12 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Invoice;
 
-use SugarCommerce\Pdf\{Align, Document, Font, Table};
-use SugarCommerce\Pdf\Templates\{Rows, VatTreatment};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Table;
+use SugarCommerce\Pdf\Templates\Rows;
 
 /**
  * The item table, the VAT breakdown and the totals.

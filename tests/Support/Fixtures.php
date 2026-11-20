@@ -14,8 +14,23 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests\Support;
 
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\FontFamily;
-use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, FacturX, FacturXProfile, Invoice, Language, LineItem, Party, PaymentCode, Receipt, Statement, Totals, TotalsLine, VatLine, VatTreatment};
+use SugarCommerce\Pdf\Models\FontFamily;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Models\Templates\FacturXProfile;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Models\Templates\VatLine;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Templates\Language;
+use SugarCommerce\Pdf\Templates\Receipt;
+use SugarCommerce\Pdf\Templates\Statement;
 
 /**
  * Class Fixtures

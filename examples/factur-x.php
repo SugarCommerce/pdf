@@ -9,7 +9,15 @@ declare( strict_types=1 );
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use SugarCommerce\Pdf\Templates\{Branding, Discount, FacturX, FacturXException, FacturXProfile, Invoice, Party, Totals, TotalsLine};
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Models\Templates\FacturXProfile;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Templates\FacturXException;
+use SugarCommerce\Pdf\Templates\Invoice;
 
 $totals = new Totals(
 	lines: [

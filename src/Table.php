@@ -12,6 +12,10 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf;
 
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
+
 /**
  * Class Table
  *

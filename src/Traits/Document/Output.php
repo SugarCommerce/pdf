@@ -12,8 +12,8 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\Font;
 use SugarCommerce\Pdf\Fonts\FontSubset;
+use SugarCommerce\Pdf\Models\Font;
 use SugarCommerce\Pdf\Output\Writer;
 
 /**

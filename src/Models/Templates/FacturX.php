@@ -10,12 +10,12 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf\Templates;
+namespace SugarCommerce\Pdf\Models\Templates;
 
 /**
  * Class FacturX
  *
- * The machine-readable half of an invoice, beside {@see Invoice}.
+ * The machine-readable half of an invoice, beside {@see \SugarCommerce\Pdf\Templates\Invoice}.
  *
  * Germany's e-invoicing mandate is phasing in, France's follows, and both
  * want an invoice a system can read without looking at the picture.
@@ -23,7 +23,7 @@ namespace SugarCommerce\Pdf\Templates;
  * PDF/A-3 carrying the invoice as XML. The page is what a person reads;
  * the attachment is what the buyer's ledger reads.
  *
- * Every amount on an {@see Invoice} is a string, deliberately, and reading
+ * Every amount on an {@see \SugarCommerce\Pdf\Templates\Invoice} is a string, deliberately, and reading
  * "1.234,56 €" back into a number means guessing which mark is the
  * decimal point. So the figures come from the {@see Totals} the page was
  * printed from — the same integers, for the XML and the page alike — and

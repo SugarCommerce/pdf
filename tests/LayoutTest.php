@@ -11,8 +11,16 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Document, Font, Table};
-use SugarCommerce\Pdf\Templates\{DocumentKind, Invoice, LineItem, Party, Totals, TotalsLine};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Table;
+use SugarCommerce\Pdf\Templates\Invoice;
 use SugarCommerce\Pdf\Tests\Support\{Fixtures, Reader};
 
 final class LayoutTest extends TestCase {

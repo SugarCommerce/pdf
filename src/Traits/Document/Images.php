@@ -12,7 +12,9 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\{Align, Fit, Image};
+use SugarCommerce\Pdf\Image;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Fit;
 
 /**
  * PNG and JPEG pictures, read once per document and placed in a box.

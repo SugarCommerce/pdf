@@ -13,7 +13,9 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Traits\Invoice;
 
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\Templates\{DocumentKind, Rows, VatTreatment};
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Templates\Rows;
 
 /**
  * Which mandatory particulars are missing, from the data and from the

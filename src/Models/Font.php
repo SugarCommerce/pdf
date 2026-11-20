@@ -10,7 +10,7 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Models;
 
 /**
  * Enum Font
@@ -199,7 +199,7 @@ enum Font: string {
 	/**
 	 * The width of a string at a given size, in points.
 	 *
-	 * Takes WinAnsi bytes, as {@see Document::escape()} makes them. A byte
+	 * Takes WinAnsi bytes, as {@see \SugarCommerce\Pdf\Document::escape()} makes them. A byte
 	 * outside the table — one of the five WinAnsi leaves undefined, or
 	 * UTF-8 passed by mistake — falls back to the width of `n`.
 	 *

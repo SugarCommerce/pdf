@@ -18,10 +18,25 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize, Table};
+use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\Images\Svg;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Orientation;
+use SugarCommerce\Pdf\Models\PageSize;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\VatLine;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Table;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Templates\Language;
+use SugarCommerce\Pdf\Templates\Receipt;
+use SugarCommerce\Pdf\Templates\Statement;
+use SugarCommerce\Pdf\Templates\Translations;
 use SugarCommerce\Pdf\Tests\Support\Reader;
-use SugarCommerce\Pdf\Templates\{Branding, Invoice, Language, LineItem, Party, Receipt, Statement, Translations, VatLine, VatTreatment};
 
 final class PdfTest extends TestCase {
 

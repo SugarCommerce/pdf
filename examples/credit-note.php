@@ -7,7 +7,14 @@ declare( strict_types=1 );
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, Invoice, Party, PaymentCode, Totals, TotalsLine};
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Templates\Invoice;
 
 $branding = new Branding( 'Northwind Audio', 'Sample packs and presets', address: [ '12 Example Street', 'Dublin 2', 'Ireland' ] );
 $seller   = new Party( 'Northwind Audio Ltd', tax_id: 'IE1234567X', registration: '654321' );

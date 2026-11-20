@@ -12,8 +12,11 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Invoice;
 
-use SugarCommerce\Pdf\{Align, Document, Font};
-use SugarCommerce\Pdf\Templates\{Party, Rows};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Templates\Rows;
 
 /**
  * The masthead, the stamp across it, the two parties and the rows of

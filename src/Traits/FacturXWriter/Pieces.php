@@ -13,8 +13,14 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Traits\FacturXWriter;
 
 use SugarCommerce\Money\Money;
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
 use SugarCommerce\Pdf\Output\Archival;
-use SugarCommerce\Pdf\Templates\{Discount, DocumentKind, FacturX, Invoice, Party, Totals, VatTreatment};
+use SugarCommerce\Pdf\Templates\Invoice;
 
 /**
  * The parties, lines, taxes, allowances, terms and delivery, each in

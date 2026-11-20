@@ -51,7 +51,8 @@ An order's invoice, sent to the person who asked for it:
 
 ```php
 use SugarCommerce\Pdf\Download;
-use SugarCommerce\Pdf\Templates\{Branding, Invoice, LineItem, Party, Translations};
+use SugarCommerce\Pdf\Models\Templates\{Branding, LineItem, Party};
+use SugarCommerce\Pdf\Templates\{Invoice, Translations};
 
 $invoice = new Invoice(
 	branding: new Branding( 'Northwind Audio', 'Sample packs and presets' ),
@@ -110,7 +111,7 @@ showed. When the figures have not been worked out yet, `Totals` does it in
 integers and formats every amount from the same numbers:
 
 ```php
-use SugarCommerce\Pdf\Templates\{Discount, Totals, TotalsLine};
+use SugarCommerce\Pdf\Models\Templates\{Discount, Totals, TotalsLine};
 
 $totals = new Totals(
 	lines: [
@@ -150,7 +151,7 @@ currency `sugarcommerce/money` does not know. `rows( Language::German )` gives
 ## Credit notes, quotes and the other kinds
 
 ```php
-use SugarCommerce\Pdf\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
 
 new Invoice(
 	// …
@@ -186,7 +187,7 @@ the standing notes are English unless your translator has them (their keys are
 ## Payment codes
 
 ```php
-use SugarCommerce\Pdf\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
 
 new Invoice(
 	// …
@@ -208,7 +209,8 @@ cannot shift the fields after it. `Document::qr()` draws a code anywhere.
 ## VAT
 
 ```php
-use SugarCommerce\Pdf\Templates\{Language, VatLine, VatTreatment};
+use SugarCommerce\Pdf\Models\Templates\{VatLine, VatTreatment};
+use SugarCommerce\Pdf\Templates\Language;
 
 new Invoice(
 	// …
@@ -296,7 +298,7 @@ same on every server.
 in it, headings in its bold:
 
 ```php
-use SugarCommerce\Pdf\FontFamily;
+use SugarCommerce\Pdf\Models\FontFamily;
 
 $brand = new Branding( 'Northwind Audio', typeface: FontFamily::files(
 	__DIR__ . '/fonts/Inter-Regular.ttf',
@@ -365,7 +367,8 @@ read, for a logo used on thousands of documents in one request.
 On a document of your own:
 
 ```php
-use SugarCommerce\Pdf\{Align, Document, Fit, Image};
+use SugarCommerce\Pdf\{Document, Image};
+use SugarCommerce\Pdf\Models\{Align, Fit};
 
 $pdf  = new Document();
 $logo = Image::file( __DIR__ . '/assets/logo.png' ); // read and checked once
@@ -442,7 +445,8 @@ for the ledger. Make the invoice from a `Totals`, as usual, and give the same
 `Totals` to a `FacturX` with the dates the XML states:
 
 ```php
-use SugarCommerce\Pdf\Templates\{FacturX, FacturXProfile, Invoice, Party, Totals, TotalsLine};
+use SugarCommerce\Pdf\Models\Templates\{FacturX, FacturXProfile, Party, Totals, TotalsLine};
+use SugarCommerce\Pdf\Templates\Invoice;
 
 $totals  = new Totals( [ new TotalsLine( 'Drum Kit Vol. 2 — studio licence', 14900 ) ], 'EUR', 23 );
 $invoice = new Invoice(
@@ -511,7 +515,8 @@ into `.validator/` (gitignored; pinned versions, nothing committed), and
 Any document can be written for archiving:
 
 ```php
-use SugarCommerce\Pdf\{Attachment, Document, Relationship};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\{Attachment, Relationship};
 
 $pdf = ( new Document() )->archival(); // before drawing anything
 $pdf->attach( new Attachment( 'order.json', $json, 'application/json', 'The order', Relationship::Source ) );
@@ -540,7 +545,8 @@ condition at all.
 ## A document of your own
 
 ```php
-use SugarCommerce\Pdf\{Align, Color, Document, PageSize, Table};
+use SugarCommerce\Pdf\{Document, Table};
+use SugarCommerce\Pdf\Models\{Align, Color, PageSize};
 
 $pdf = new Document( PageSize::A4, margin: 48.0 );
 
@@ -655,6 +661,20 @@ composer test             # then runs them too
 * No forms, encryption or signatures, and no reading existing PDFs — so no turning someone else's PDF into an e-invoice
 
 For those, use a full library. This one is for documents you generate.
+
+## Layout
+
+* `src/Document.php` (with `src/Traits/Document/`), `Table.php`, `Image.php` and
+  `Download.php`: drawing a document and sending it.
+* `src/Fonts/`, `src/Images/`, `src/Output/`, `src/Support/`: reading TrueType,
+  JPEG, PNG and SVG, writing the file and its PDF/A-3 parts.
+* `src/Templates/`: the built-in invoice, receipt and statement, the Factur-X
+  writer and the wording (`Language`, `Translations`, `Translator`).
+* `src/Models/`: data shapes. At the top the drawing vocabulary (`Align`, `Fit`,
+  `Color`, `Font`, `FontFamily`, `PageSize`, `Orientation`, `Attachment`,
+  `Relationship`); in `Models/Templates/` what a template is given (`Party`,
+  `LineItem`, `Totals` and its lines, `Discount`, `Branding`, `PaymentCode`,
+  `FacturX`, `DocumentKind`, `VatTreatment`, `FacturXProfile`).
 
 ## Security
 

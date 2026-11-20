@@ -12,8 +12,8 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\Color;
 use SugarCommerce\Pdf\Images\Svg;
+use SugarCommerce\Pdf\Models\Color;
 use SugarCommerce\Qr\QR;
 
 /**

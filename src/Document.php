@@ -13,6 +13,9 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf;
 
 use SugarCommerce\Pdf\Fonts\{FontSubset, TrueType};
+use SugarCommerce\Pdf\Models\FontFamily;
+use SugarCommerce\Pdf\Models\Orientation;
+use SugarCommerce\Pdf\Models\PageSize;
 use SugarCommerce\Pdf\Traits\Document\{Archiving, Encoding, Fonts, Images, Measuring, Output, Text, Vector};
 
 /**
@@ -23,7 +26,7 @@ use SugarCommerce\Pdf\Traits\Document\{Archiving, Encoding, Fonts, Images, Measu
  *
  * Text is set in the base-14 fonts every reader is required to have, so
  * a document in a Western European language is a few kilobytes. Real
- * font metrics are carried (see {@see Font}), which is what makes
+ * font metrics are carried (see {@see \SugarCommerce\Pdf\Models\Font}), which is what makes
  * right-aligned money columns and measured table layout possible at all —
  * padding with spaces only lines up in a monospace font.
  *

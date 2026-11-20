@@ -14,7 +14,10 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Document, Font, FontFamily};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\FontFamily;
 use SugarCommerce\Pdf\Fonts\{FontSubset, TrueType};
 use SugarCommerce\Pdf\Tests\Support\{FontBuilder, Reader};
 

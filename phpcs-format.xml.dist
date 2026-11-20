@@ -42,12 +42,12 @@
 
     <rule ref="WordPress.Arrays.ArrayDeclarationSpacing">
         <!--
-            src/Font.php holds the Helvetica width tables: 95 numbers per
+            src/Models/Font.php holds the Helvetica width tables: 95 numbers per
             font, sixteen to a row, laid out the way the Adobe metrics print
             them. One number per line would turn a table anybody can check
             against the AFM file into 190 lines nobody will.
         -->
-        <exclude-pattern>src/Font.php</exclude-pattern>
+        <exclude-pattern>src/Models/Font.php</exclude-pattern>
     </rule>
 
 </ruleset>

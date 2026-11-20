@@ -6,7 +6,10 @@ declare( strict_types=1 );
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use SugarCommerce\Pdf\Templates\{Invoice, Branding, Party, LineItem};
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Templates\Invoice;
 
 // A proper mark: an interlocking "S" built from Béziers, which also
 // proves the curve conversion rather than just the line one.

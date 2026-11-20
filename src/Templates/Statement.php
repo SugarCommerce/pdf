@@ -12,7 +12,15 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Templates;
 
-use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize, Table};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Orientation;
+use SugarCommerce\Pdf\Models\PageSize;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Table;
 
 /**
  * Class Statement

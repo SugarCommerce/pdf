@@ -12,7 +12,7 @@ namespace SugarCommerce\Pdf\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
 use SugarCommerce\Pdf\Tests\Support\Reader;
 use SugarCommerce\Qr\QR;
 

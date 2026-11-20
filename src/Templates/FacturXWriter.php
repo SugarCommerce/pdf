@@ -13,6 +13,8 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Templates;
 
 use SugarCommerce\Money\Money;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Models\Templates\FacturXProfile;
 use SugarCommerce\Pdf\Traits\FacturXWriter\{Checks, Pieces};
 
 /**

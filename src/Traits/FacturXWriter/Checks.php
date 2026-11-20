@@ -13,7 +13,11 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Traits\FacturXWriter;
 
 use SugarCommerce\Money\Currencies;
-use SugarCommerce\Pdf\Templates\{FacturX, FacturXProfile, Invoice, Rows, VatTreatment};
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Models\Templates\FacturXProfile;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Templates\Rows;
 
 /**
  * The particulars a profile requires, and the figures checked against

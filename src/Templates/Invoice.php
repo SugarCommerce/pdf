@@ -12,7 +12,17 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Templates;
 
-use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Orientation;
+use SugarCommerce\Pdf\Models\PageSize;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
 use SugarCommerce\Pdf\Traits\Invoice\{Compliance, EInvoice, Figures, Header, Notes};
 
 /**
@@ -27,7 +37,7 @@ use SugarCommerce\Pdf\Traits\Invoice\{Compliance, EInvoice, Figures, Header, Not
  * correctly means knowing the currency's decimal exponent, its thousands
  * convention and its symbol placement, and a layout class has no
  * business guessing at any of that. Format it where the money lives and
- * pass the result — or let {@see Totals} work the figures out from
+ * pass the result — or let {@see \SugarCommerce\Pdf\Models\Templates\Totals} work the figures out from
  * minor units and format them for you.
  *
  * Typical use:

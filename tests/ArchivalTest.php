@@ -15,8 +15,13 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Attachment, Document, Font, FontFamily, Image, Relationship};
+use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\Fonts\TrueType;
+use SugarCommerce\Pdf\Image;
+use SugarCommerce\Pdf\Models\Attachment;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\FontFamily;
+use SugarCommerce\Pdf\Models\Relationship;
 use SugarCommerce\Pdf\Output\{Archival, Writer};
 use SugarCommerce\Pdf\Tests\Support\{FontBuilder, Pictures, Reader};
 

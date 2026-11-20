@@ -10,7 +10,10 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf\Templates;
+namespace SugarCommerce\Pdf\Models\Templates;
+
+use SugarCommerce\Pdf\Templates\Language;
+use SugarCommerce\Pdf\Templates\Translator;
 
 /**
  * Enum DocumentKind

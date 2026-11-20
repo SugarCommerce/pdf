@@ -11,7 +11,13 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\Templates\{Discount, DocumentKind, Language, LineItem, Totals, TotalsLine, VatLine};
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Models\Templates\VatLine;
+use SugarCommerce\Pdf\Templates\Language;
 
 final class TotalsTest extends TestCase {
 

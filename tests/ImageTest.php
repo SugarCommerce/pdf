@@ -12,8 +12,16 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Document, Fit, Image};
-use SugarCommerce\Pdf\Templates\{Branding, Invoice, LineItem, Party, Receipt, Statement};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Image;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Fit;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Templates\Receipt;
+use SugarCommerce\Pdf\Templates\Statement;
 use SugarCommerce\Pdf\Tests\Support\{Pictures, ProbeWrapper, Reader};
 
 final class ImageTest extends TestCase {

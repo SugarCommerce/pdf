@@ -14,7 +14,16 @@ namespace SugarCommerce\Pdf\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\Templates\{Branding, DocumentKind, Invoice, Language, LineItem, Party, PaymentCode, Translations, VatLine, VatTreatment};
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\PaymentCode;
+use SugarCommerce\Pdf\Models\Templates\VatLine;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Templates\Language;
+use SugarCommerce\Pdf\Templates\Translations;
 use SugarCommerce\Pdf\Tests\Support\{Fixtures, Reader};
 
 final class InvoiceTest extends TestCase {

@@ -10,14 +10,15 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf\Templates;
+namespace SugarCommerce\Pdf\Models\Templates;
 
-use SugarCommerce\Pdf\Align;
-use SugarCommerce\Pdf\Color;
 use SugarCommerce\Pdf\Document;
-use SugarCommerce\Pdf\Fit;
-use SugarCommerce\Pdf\FontFamily;
 use SugarCommerce\Pdf\Image;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Fit;
+use SugarCommerce\Pdf\Models\FontFamily;
+use SugarCommerce\Pdf\Templates\Translator;
 
 /**
  * Class Branding

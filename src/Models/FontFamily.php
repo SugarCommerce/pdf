@@ -10,7 +10,7 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Models;
 
 use SugarCommerce\Pdf\Fonts\TrueType;
 
@@ -103,7 +103,7 @@ final readonly class FontFamily {
 	 * @return self
 	 */
 	public static function noto_sans(): self {
-		$folder = dirname( __DIR__ ) . '/fonts/';
+		$folder = dirname( __DIR__, 2 ) . '/fonts/';
 
 		return self::files( $folder . 'NotoSans-Regular.ttf', $folder . 'NotoSans-Bold.ttf' );
 	}

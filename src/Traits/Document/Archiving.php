@@ -12,7 +12,7 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Document;
 
-use SugarCommerce\Pdf\Attachment;
+use SugarCommerce\Pdf\Models\Attachment;
 
 /**
  * The archival switch, the files attached to a document and the XMP

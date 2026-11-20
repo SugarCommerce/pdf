@@ -12,8 +12,11 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Invoice;
 
-use SugarCommerce\Pdf\{Attachment, Document};
-use SugarCommerce\Pdf\Templates\{FacturX, FacturXException, FacturXWriter};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Attachment;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Templates\FacturXException;
+use SugarCommerce\Pdf\Templates\FacturXWriter;
 
 /**
  * What stops it being one, its CII XML, and the PDF/A-3 file that

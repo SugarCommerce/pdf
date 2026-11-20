@@ -7,7 +7,13 @@ declare( strict_types=1 );
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use SugarCommerce\Pdf\{Document, Table, Font, Color, Align, PageSize, Orientation};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Color;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Orientation;
+use SugarCommerce\Pdf\Models\PageSize;
+use SugarCommerce\Pdf\Table;
 
 $brand = Color::hex( '#0f766e' );
 $muted = Color::grey( 110 );

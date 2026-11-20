@@ -15,8 +15,8 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\FontFamily;
 use SugarCommerce\Pdf\Fonts\TrueType;
+use SugarCommerce\Pdf\Models\FontFamily;
 use SugarCommerce\Pdf\Tests\Support\{FontBuilder, ProbeWrapper};
 
 final class TrueTypeTest extends TestCase {

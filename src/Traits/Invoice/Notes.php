@@ -12,8 +12,11 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf\Traits\Invoice;
 
-use SugarCommerce\Pdf\{Align, Document, Font};
-use SugarCommerce\Pdf\Templates\{Language, VatTreatment};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Align;
+use SugarCommerce\Pdf\Models\Font;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
+use SugarCommerce\Pdf\Templates\Language;
 
 /**
  * The VAT notes a treatment needs, in the invoice's language, and the

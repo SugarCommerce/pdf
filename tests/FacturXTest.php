@@ -16,9 +16,20 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Document, Relationship};
+use SugarCommerce\Pdf\Document;
+use SugarCommerce\Pdf\Models\Relationship;
 use SugarCommerce\Pdf\Tests\Support\{Fixtures, Reader, Validators};
-use SugarCommerce\Pdf\Templates\{Branding, Discount, DocumentKind, FacturX, FacturXException, FacturXProfile, Invoice, Party, Totals, TotalsLine, VatTreatment};
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Discount;
+use SugarCommerce\Pdf\Models\Templates\DocumentKind;
+use SugarCommerce\Pdf\Models\Templates\FacturX;
+use SugarCommerce\Pdf\Templates\FacturXException;
+use SugarCommerce\Pdf\Models\Templates\FacturXProfile;
+use SugarCommerce\Pdf\Templates\Invoice;
+use SugarCommerce\Pdf\Models\Templates\Party;
+use SugarCommerce\Pdf\Models\Templates\Totals;
+use SugarCommerce\Pdf\Models\Templates\TotalsLine;
+use SugarCommerce\Pdf\Models\Templates\VatTreatment;
 
 final class FacturXTest extends TestCase {
 

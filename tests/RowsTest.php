@@ -13,10 +13,10 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\Branding;
+use SugarCommerce\Pdf\Models\Templates\LineItem;
+use SugarCommerce\Pdf\Models\Templates\Party;
 use SugarCommerce\Pdf\Templates\Invoice;
-use SugarCommerce\Pdf\Templates\LineItem;
-use SugarCommerce\Pdf\Templates\Party;
 use SugarCommerce\Pdf\Templates\Rows;
 
 /**
