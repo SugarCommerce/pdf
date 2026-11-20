@@ -10,7 +10,9 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Images;
+
+use SugarCommerce\Pdf\Image;
 
 /**
  * Class Jpeg

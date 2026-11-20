@@ -10,7 +10,9 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Output;
+
+use SugarCommerce\Pdf\Document;
 
 /**
  * Class Archival
@@ -55,7 +57,7 @@ final class Archival {
 		static $profile = null;
 
 		if ( null === $profile ) {
-			$path    = dirname( __DIR__ ) . '/' . self::PROFILE;
+			$path    = dirname( __DIR__, 2 ) . '/' . self::PROFILE;
 			$profile = is_file( $path ) ? file_get_contents( $path ) : false;
 
 			if ( ! is_string( $profile ) || strlen( $profile ) < 128 || 'acsp' !== substr( $profile, 36, 4 ) ) {

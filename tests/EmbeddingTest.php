@@ -14,7 +14,8 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Document, Font, FontFamily, FontSubset, TrueType};
+use SugarCommerce\Pdf\{Align, Document, Font, FontFamily};
+use SugarCommerce\Pdf\Fonts\{FontSubset, TrueType};
 use SugarCommerce\Pdf\Tests\Support\{FontBuilder, Reader};
 
 final class EmbeddingTest extends TestCase {

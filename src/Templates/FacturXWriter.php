@@ -13,7 +13,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Templates;
 
 use SugarCommerce\Money\{Currencies, Money};
-use SugarCommerce\Pdf\Archival;
+use SugarCommerce\Pdf\Output\Archival;
 
 /**
  * Class FacturXWriter

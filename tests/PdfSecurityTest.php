@@ -18,7 +18,7 @@ use SugarCommerce\Pdf\Align;
 use SugarCommerce\Pdf\Color;
 use SugarCommerce\Pdf\Document;
 use SugarCommerce\Pdf\Font;
-use SugarCommerce\Pdf\Svg;
+use SugarCommerce\Pdf\Images\Svg;
 use SugarCommerce\Pdf\Tests\Support\Reader;
 
 /**

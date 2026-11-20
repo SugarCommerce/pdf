@@ -12,6 +12,9 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Pdf;
 
+use SugarCommerce\Pdf\Fonts\{FontSubset, TrueType};
+use SugarCommerce\Pdf\Images\Svg;
+use SugarCommerce\Pdf\Output\Writer;
 use SugarCommerce\Qr\QR;
 
 /**

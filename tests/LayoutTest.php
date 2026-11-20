@@ -121,7 +121,7 @@ final class LayoutTest extends TestCase {
 		$this->assertStringContainsString( '/Type /Catalog /Pages 2 0 R /Lang (de-AT)>>', ( new Document() )->language( 'de_AT' )->render( self::CREATED ) );
 		$this->assertStringContainsString( '/Type /Catalog /Pages 2 0 R>>', ( new Document() )->language( 'en) /OpenAction' )->render( self::CREATED ) );
 		$this->assertSame( '', ( new Document() )->language( 'en) /OpenAction' )->language_tag() );
-		$this->assertStringContainsString( '/Lang (en)', \SugarCommerce\Pdf\Writer::write( array( '' ), 10, 10, array(), 'e(n)' ) );
+		$this->assertStringContainsString( '/Lang (en)', \SugarCommerce\Pdf\Output\Writer::write( array( '' ), 10, 10, array(), 'e(n)' ) );
 	}
 
 	public function test_drawn_text_is_what_a_reader_extracts(): void {

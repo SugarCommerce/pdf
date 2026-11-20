@@ -18,7 +18,8 @@ namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize, Svg, Table};
+use SugarCommerce\Pdf\{Align, Color, Document, Font, Orientation, PageSize, Table};
+use SugarCommerce\Pdf\Images\Svg;
 use SugarCommerce\Pdf\Tests\Support\Reader;
 use SugarCommerce\Pdf\Templates\{Branding, Invoice, Language, LineItem, Party, Receipt, Statement, Translations, VatLine, VatTreatment};
 

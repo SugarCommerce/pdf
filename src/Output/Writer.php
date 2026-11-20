@@ -10,7 +10,9 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Pdf;
+namespace SugarCommerce\Pdf\Output;
+
+use SugarCommerce\Pdf\{Attachment, Document, Font, Relationship};
 
 /**
  * Class Writer

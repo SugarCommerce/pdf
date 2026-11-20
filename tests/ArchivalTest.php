@@ -15,7 +15,9 @@ declare( strict_types=1 );
 namespace SugarCommerce\Pdf\Tests;
 
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Pdf\{Archival, Attachment, Document, Font, FontFamily, Image, Relationship, TrueType, Writer};
+use SugarCommerce\Pdf\{Attachment, Document, Font, FontFamily, Image, Relationship};
+use SugarCommerce\Pdf\Fonts\TrueType;
+use SugarCommerce\Pdf\Output\{Archival, Writer};
 use SugarCommerce\Pdf\Tests\Support\{FontBuilder, Pictures, Reader};
 
 final class ArchivalTest extends TestCase {
